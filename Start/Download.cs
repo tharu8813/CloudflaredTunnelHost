@@ -1,22 +1,23 @@
 ﻿using CloudflaredTunnelHost.Tools;
 
-namespace CloudflaredTunnelHost.Start
-{
-    public partial class Download : DevForm
-    {
-        public Download()
-        {
+namespace CloudflaredTunnelHost.Start {
+    public partial class Download : DevForm {
+        public Download() {
             InitializeComponent();
         }
 
-        private void Download_Load(object sender, EventArgs e)
-        {
-            bool success = Tol.DownloadFileAsync(
-                Tol.path + @"cloudflared.exe",
+        private async void Download_Load(object sender, EventArgs e) {
+            bool success = await Tol.DownloadFileAsync(
+                Tol.path + @"tools/cloudflared.exe",
                 @"https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe",
                 progressBar1,
                 label1);
-
+            if (success) {
+                DialogResult = DialogResult.OK;
+            } else {
+                DialogResult = DialogResult.Cancel;
+            }
+            Dispose();
         }
     }
 }
