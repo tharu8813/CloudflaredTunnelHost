@@ -41,7 +41,7 @@ CloudflaredTunnelHost/
 
 ## 버그 리포트
 
-버그를 발견하셨나요? [Issues](https://github.com/yourusername/CloudflaredTunnelHost/issues)에 등록해주세요.
+버그를 발견하셨나요? [Issues](https://github.com/tharu8813/CloudflaredTunnelHost/issues)에 등록해주세요.
 
 ## 라이선스
 
