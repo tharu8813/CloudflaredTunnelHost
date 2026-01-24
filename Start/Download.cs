@@ -8,7 +8,7 @@ namespace CloudflaredTunnelHost.Start {
 
         private async void Download_Load(object sender, EventArgs e) {
             bool success = await Tol.DownloadFileAsync(
-                Tol.path + @"tools/cloudflared.exe",
+                Tol.cloudflaredPath,
                 @"https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe",
                 progressBar1,
                 label1);

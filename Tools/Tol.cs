@@ -4,7 +4,8 @@ namespace CloudflaredTunnelHost.Tools {
     internal class Tol {
         public static event EventHandler<DownloadCompletedEventArgs> DownloadCompleted;
         public static string path = Application.StartupPath;
-        public static string cloudflaredPath = Path.Combine(Application.LocalUserAppDataPath, "tools/cloudflared.exe");
+        public static string dataPath = Application.LocalUserAppDataPath;
+        public static string cloudflaredPath = Path.Combine(dataPath, "tools/cloudflared.exe");
 
         public static void ShowError(string text) {
             MessageBox.Show(text, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);

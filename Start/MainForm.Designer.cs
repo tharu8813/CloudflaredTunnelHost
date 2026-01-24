@@ -23,14 +23,27 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            txtLog = new TextBox();
+            grpLog = new GroupBox();
+            panel3 = new Panel();
+            btnClearLog = new Button();
+            panel5 = new Panel();
+            btnViewLogFile = new Button();
+            panel6 = new Panel();
+            btnSaveLog = new Button();
+            panel1 = new Panel();
+            panel2 = new Panel();
             btnStart = new Button();
             btnStop = new Button();
-            txtLog = new TextBox();
+            grpStatus = new GroupBox();
+            btnOpenBrowser = new Button();
+            btnQRCode = new Button();
+            lblUptime = new Label();
+            label1 = new Label();
+            btnCopyUrl = new Button();
+            lblUrl = new Label();
             txtStatus = new TextBox();
             grpSettings = new GroupBox();
-            btnBrowseWorkDir = new Button();
-            txtWorkingDirectory = new TextBox();
-            lblWorkDir = new Label();
             cmbServiceType = new ComboBox();
             lblServiceType = new Label();
             chkLogFile = new CheckBox();
@@ -41,28 +54,160 @@
             lblLogLevel = new Label();
             txtPort = new TextBox();
             lblPort = new Label();
-            grpStatus = new GroupBox();
-            btnCopyUrl = new Button();
-            lblUrl = new Label();
-            grpLog = new GroupBox();
-            btnClearLog = new Button();
-            grpSettings.SuspendLayout();
-            grpStatus.SuspendLayout();
+            panel4 = new Panel();
             grpLog.SuspendLayout();
+            panel3.SuspendLayout();
+            panel1.SuspendLayout();
+            panel2.SuspendLayout();
+            grpStatus.SuspendLayout();
+            grpSettings.SuspendLayout();
             SuspendLayout();
+            // 
+            // txtLog
+            // 
+            txtLog.BackColor = Color.FromArgb(30, 30, 30);
+            txtLog.BorderStyle = BorderStyle.None;
+            txtLog.Dock = DockStyle.Fill;
+            txtLog.Font = new Font("Consolas", 9F);
+            txtLog.ForeColor = Color.FromArgb(200, 200, 200);
+            txtLog.Location = new Point(5, 21);
+            txtLog.Multiline = true;
+            txtLog.Name = "txtLog";
+            txtLog.ReadOnly = true;
+            txtLog.ScrollBars = ScrollBars.Vertical;
+            txtLog.Size = new Size(506, 382);
+            txtLog.TabIndex = 2;
+            // 
+            // grpLog
+            // 
+            grpLog.Controls.Add(txtLog);
+            grpLog.Controls.Add(panel3);
+            grpLog.Dock = DockStyle.Fill;
+            grpLog.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            grpLog.Location = new Point(313, 10);
+            grpLog.Name = "grpLog";
+            grpLog.Padding = new Padding(5);
+            grpLog.Size = new Size(516, 446);
+            grpLog.TabIndex = 6;
+            grpLog.TabStop = false;
+            grpLog.Text = "📝 로그";
+            // 
+            // panel3
+            // 
+            panel3.Controls.Add(btnClearLog);
+            panel3.Controls.Add(panel5);
+            panel3.Controls.Add(btnViewLogFile);
+            panel3.Controls.Add(panel6);
+            panel3.Controls.Add(btnSaveLog);
+            panel3.Dock = DockStyle.Bottom;
+            panel3.Location = new Point(5, 403);
+            panel3.Name = "panel3";
+            panel3.Padding = new Padding(5);
+            panel3.Size = new Size(506, 38);
+            panel3.TabIndex = 11;
+            // 
+            // btnClearLog
+            // 
+            btnClearLog.BackColor = Color.FromArgb(150, 150, 150);
+            btnClearLog.Cursor = Cursors.Hand;
+            btnClearLog.Dock = DockStyle.Fill;
+            btnClearLog.FlatAppearance.BorderSize = 0;
+            btnClearLog.FlatStyle = FlatStyle.Flat;
+            btnClearLog.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            btnClearLog.ForeColor = Color.White;
+            btnClearLog.Location = new Point(5, 5);
+            btnClearLog.Name = "btnClearLog";
+            btnClearLog.Size = new Size(279, 28);
+            btnClearLog.TabIndex = 4;
+            btnClearLog.Text = "🗑️ 로그 초기화";
+            btnClearLog.UseVisualStyleBackColor = false;
+            btnClearLog.Click += btnClearLog_Click;
+            // 
+            // panel5
+            // 
+            panel5.Dock = DockStyle.Right;
+            panel5.Location = new Point(284, 5);
+            panel5.Name = "panel5";
+            panel5.Size = new Size(5, 28);
+            panel5.TabIndex = 12;
+            // 
+            // btnViewLogFile
+            // 
+            btnViewLogFile.BackColor = Color.Sienna;
+            btnViewLogFile.Cursor = Cursors.Hand;
+            btnViewLogFile.Dock = DockStyle.Right;
+            btnViewLogFile.FlatAppearance.BorderSize = 0;
+            btnViewLogFile.FlatStyle = FlatStyle.Flat;
+            btnViewLogFile.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            btnViewLogFile.ForeColor = Color.White;
+            btnViewLogFile.Location = new Point(289, 5);
+            btnViewLogFile.Name = "btnViewLogFile";
+            btnViewLogFile.Size = new Size(119, 28);
+            btnViewLogFile.TabIndex = 6;
+            btnViewLogFile.Text = "📂 로그 파일 열기";
+            btnViewLogFile.UseVisualStyleBackColor = false;
+            btnViewLogFile.Click += btnViewLogFile_Click;
+            // 
+            // panel6
+            // 
+            panel6.Dock = DockStyle.Right;
+            panel6.Location = new Point(408, 5);
+            panel6.Name = "panel6";
+            panel6.Size = new Size(5, 28);
+            panel6.TabIndex = 14;
+            // 
+            // btnSaveLog
+            // 
+            btnSaveLog.BackColor = Color.FromArgb(50, 150, 50);
+            btnSaveLog.Cursor = Cursors.Hand;
+            btnSaveLog.Dock = DockStyle.Right;
+            btnSaveLog.FlatAppearance.BorderSize = 0;
+            btnSaveLog.FlatStyle = FlatStyle.Flat;
+            btnSaveLog.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            btnSaveLog.ForeColor = Color.White;
+            btnSaveLog.Location = new Point(413, 5);
+            btnSaveLog.Name = "btnSaveLog";
+            btnSaveLog.Size = new Size(88, 28);
+            btnSaveLog.TabIndex = 5;
+            btnSaveLog.Text = "💾 로그 저장";
+            btnSaveLog.UseVisualStyleBackColor = false;
+            btnSaveLog.Click += btnSaveLog_Click;
+            // 
+            // panel1
+            // 
+            panel1.Controls.Add(panel2);
+            panel1.Controls.Add(grpStatus);
+            panel1.Controls.Add(grpSettings);
+            panel1.Dock = DockStyle.Left;
+            panel1.Location = new Point(10, 10);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(293, 446);
+            panel1.TabIndex = 7;
+            // 
+            // panel2
+            // 
+            panel2.Controls.Add(btnStart);
+            panel2.Controls.Add(btnStop);
+            panel2.Dock = DockStyle.Bottom;
+            panel2.Location = new Point(0, 393);
+            panel2.Name = "panel2";
+            panel2.Padding = new Padding(10);
+            panel2.Size = new Size(293, 53);
+            panel2.TabIndex = 10;
             // 
             // btnStart
             // 
             btnStart.BackColor = Color.FromArgb(76, 175, 80);
             btnStart.Cursor = Cursors.Hand;
+            btnStart.Dock = DockStyle.Left;
             btnStart.FlatAppearance.BorderSize = 0;
             btnStart.FlatStyle = FlatStyle.Flat;
             btnStart.Font = new Font("맑은 고딕", 10F, FontStyle.Bold);
             btnStart.ForeColor = Color.White;
-            btnStart.Location = new Point(12, 549);
+            btnStart.Location = new Point(10, 10);
             btnStart.Name = "btnStart";
-            btnStart.Size = new Size(135, 40);
-            btnStart.TabIndex = 0;
+            btnStart.Size = new Size(135, 33);
+            btnStart.TabIndex = 6;
             btnStart.Text = "🚀 터널 시작";
             btnStart.UseVisualStyleBackColor = false;
             btnStart.Click += btnStart_Click;
@@ -71,51 +216,138 @@
             // 
             btnStop.BackColor = Color.FromArgb(244, 67, 54);
             btnStop.Cursor = Cursors.Hand;
+            btnStop.Dock = DockStyle.Right;
+            btnStop.Enabled = false;
             btnStop.FlatAppearance.BorderSize = 0;
             btnStop.FlatStyle = FlatStyle.Flat;
             btnStop.Font = new Font("맑은 고딕", 10F, FontStyle.Bold);
             btnStop.ForeColor = Color.White;
-            btnStop.Location = new Point(153, 549);
+            btnStop.Location = new Point(148, 10);
             btnStop.Name = "btnStop";
-            btnStop.Size = new Size(135, 40);
-            btnStop.TabIndex = 1;
+            btnStop.Size = new Size(135, 33);
+            btnStop.TabIndex = 7;
             btnStop.Text = "⏹ 터널 중지";
             btnStop.UseVisualStyleBackColor = false;
             btnStop.Click += btnStop_Click;
             // 
-            // txtLog
+            // grpStatus
             // 
-            txtLog.BackColor = Color.FromArgb(30, 30, 30);
-            txtLog.BorderStyle = BorderStyle.None;
-            txtLog.Font = new Font("Consolas", 9F);
-            txtLog.ForeColor = Color.FromArgb(200, 200, 200);
-            txtLog.Location = new Point(10, 25);
-            txtLog.Multiline = true;
-            txtLog.Name = "txtLog";
-            txtLog.ReadOnly = true;
-            txtLog.ScrollBars = ScrollBars.Vertical;
-            txtLog.Size = new Size(469, 506);
-            txtLog.TabIndex = 2;
+            grpStatus.Controls.Add(btnOpenBrowser);
+            grpStatus.Controls.Add(btnQRCode);
+            grpStatus.Controls.Add(lblUptime);
+            grpStatus.Controls.Add(label1);
+            grpStatus.Controls.Add(btnCopyUrl);
+            grpStatus.Controls.Add(lblUrl);
+            grpStatus.Controls.Add(txtStatus);
+            grpStatus.Dock = DockStyle.Top;
+            grpStatus.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            grpStatus.Location = new Point(0, 202);
+            grpStatus.Name = "grpStatus";
+            grpStatus.Size = new Size(293, 154);
+            grpStatus.TabIndex = 9;
+            grpStatus.TabStop = false;
+            grpStatus.Text = "📡 상태";
+            // 
+            // btnOpenBrowser
+            // 
+            btnOpenBrowser.BackColor = Color.FromArgb(50, 150, 50);
+            btnOpenBrowser.Cursor = Cursors.Hand;
+            btnOpenBrowser.Enabled = false;
+            btnOpenBrowser.FlatAppearance.BorderSize = 0;
+            btnOpenBrowser.FlatStyle = FlatStyle.Flat;
+            btnOpenBrowser.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            btnOpenBrowser.ForeColor = Color.White;
+            btnOpenBrowser.Location = new Point(16, 111);
+            btnOpenBrowser.Name = "btnOpenBrowser";
+            btnOpenBrowser.Size = new Size(141, 30);
+            btnOpenBrowser.TabIndex = 9;
+            btnOpenBrowser.Text = "🌐 브라우저로 열기";
+            btnOpenBrowser.UseVisualStyleBackColor = false;
+            btnOpenBrowser.Click += btnOpenBrowser_Click;
+            // 
+            // btnQRCode
+            // 
+            btnQRCode.BackColor = Color.Gray;
+            btnQRCode.Cursor = Cursors.Hand;
+            btnQRCode.Enabled = false;
+            btnQRCode.FlatAppearance.BorderSize = 0;
+            btnQRCode.FlatStyle = FlatStyle.Flat;
+            btnQRCode.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            btnQRCode.ForeColor = Color.White;
+            btnQRCode.Location = new Point(226, 111);
+            btnQRCode.Name = "btnQRCode";
+            btnQRCode.Size = new Size(50, 30);
+            btnQRCode.TabIndex = 8;
+            btnQRCode.Text = "📱 QR";
+            btnQRCode.UseVisualStyleBackColor = false;
+            btnQRCode.Click += btnQRCode_Click;
+            // 
+            // lblUptime
+            // 
+            lblUptime.Font = new Font("맑은 고딕", 12F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            lblUptime.ForeColor = SystemColors.WindowFrame;
+            lblUptime.Location = new Point(16, 34);
+            lblUptime.Name = "lblUptime";
+            lblUptime.Size = new Size(267, 30);
+            lblUptime.TabIndex = 7;
+            lblUptime.Text = "00:00:00";
+            lblUptime.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Font = new Font("맑은 고딕", 9F);
+            label1.ForeColor = Color.FromArgb(100, 100, 100);
+            label1.Location = new Point(16, 19);
+            label1.Name = "label1";
+            label1.Size = new Size(62, 15);
+            label1.TabIndex = 6;
+            label1.Text = "실행 시간:";
+            // 
+            // btnCopyUrl
+            // 
+            btnCopyUrl.BackColor = Color.FromArgb(33, 150, 243);
+            btnCopyUrl.Cursor = Cursors.Hand;
+            btnCopyUrl.Enabled = false;
+            btnCopyUrl.FlatAppearance.BorderSize = 0;
+            btnCopyUrl.FlatStyle = FlatStyle.Flat;
+            btnCopyUrl.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
+            btnCopyUrl.ForeColor = Color.White;
+            btnCopyUrl.Location = new Point(163, 111);
+            btnCopyUrl.Name = "btnCopyUrl";
+            btnCopyUrl.Size = new Size(57, 30);
+            btnCopyUrl.TabIndex = 5;
+            btnCopyUrl.Text = "📋 복사";
+            btnCopyUrl.UseVisualStyleBackColor = false;
+            btnCopyUrl.Click += btnCopyUrl_Click;
+            // 
+            // lblUrl
+            // 
+            lblUrl.AutoSize = true;
+            lblUrl.Font = new Font("맑은 고딕", 9F);
+            lblUrl.ForeColor = Color.FromArgb(100, 100, 100);
+            lblUrl.Location = new Point(16, 64);
+            lblUrl.Name = "lblUrl";
+            lblUrl.Size = new Size(59, 15);
+            lblUrl.TabIndex = 4;
+            lblUrl.Text = "터널 URL:";
             // 
             // txtStatus
             // 
             txtStatus.BackColor = Color.FromArgb(245, 245, 245);
-            txtStatus.BorderStyle = BorderStyle.None;
-            txtStatus.Font = new Font("맑은 고딕", 11F, FontStyle.Bold);
+            txtStatus.BorderStyle = BorderStyle.FixedSingle;
+            txtStatus.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
             txtStatus.ForeColor = Color.FromArgb(100, 100, 100);
-            txtStatus.Location = new Point(10, 40);
+            txtStatus.Location = new Point(16, 82);
             txtStatus.Name = "txtStatus";
             txtStatus.ReadOnly = true;
-            txtStatus.Size = new Size(260, 20);
+            txtStatus.Size = new Size(260, 23);
             txtStatus.TabIndex = 3;
             txtStatus.Text = "대기 중...";
             txtStatus.TextAlign = HorizontalAlignment.Center;
             // 
             // grpSettings
             // 
-            grpSettings.Controls.Add(btnBrowseWorkDir);
-            grpSettings.Controls.Add(txtWorkingDirectory);
-            grpSettings.Controls.Add(lblWorkDir);
             grpSettings.Controls.Add(cmbServiceType);
             grpSettings.Controls.Add(lblServiceType);
             grpSettings.Controls.Add(chkLogFile);
@@ -126,55 +358,21 @@
             grpSettings.Controls.Add(lblLogLevel);
             grpSettings.Controls.Add(txtPort);
             grpSettings.Controls.Add(lblPort);
+            grpSettings.Dock = DockStyle.Top;
             grpSettings.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
-            grpSettings.Location = new Point(12, 12);
+            grpSettings.Location = new Point(0, 0);
             grpSettings.Name = "grpSettings";
-            grpSettings.Size = new Size(276, 288);
-            grpSettings.TabIndex = 4;
+            grpSettings.Size = new Size(293, 202);
+            grpSettings.TabIndex = 8;
             grpSettings.TabStop = false;
             grpSettings.Text = "⚙️ 설정";
-            // 
-            // btnBrowseWorkDir
-            // 
-            btnBrowseWorkDir.BackColor = Color.FromArgb(96, 125, 139);
-            btnBrowseWorkDir.Cursor = Cursors.Hand;
-            btnBrowseWorkDir.FlatAppearance.BorderSize = 0;
-            btnBrowseWorkDir.FlatStyle = FlatStyle.Flat;
-            btnBrowseWorkDir.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
-            btnBrowseWorkDir.ForeColor = Color.White;
-            btnBrowseWorkDir.Location = new Point(216, 169);
-            btnBrowseWorkDir.Name = "btnBrowseWorkDir";
-            btnBrowseWorkDir.Size = new Size(44, 23);
-            btnBrowseWorkDir.TabIndex = 5;
-            btnBrowseWorkDir.Text = "📁";
-            btnBrowseWorkDir.UseVisualStyleBackColor = false;
-            btnBrowseWorkDir.Click += btnBrowseWorkDir_Click;
-            // 
-            // txtWorkingDirectory
-            // 
-            txtWorkingDirectory.Font = new Font("맑은 고딕", 9F);
-            txtWorkingDirectory.Location = new Point(15, 169);
-            txtWorkingDirectory.Name = "txtWorkingDirectory";
-            txtWorkingDirectory.ReadOnly = true;
-            txtWorkingDirectory.Size = new Size(195, 23);
-            txtWorkingDirectory.TabIndex = 4;
-            // 
-            // lblWorkDir
-            // 
-            lblWorkDir.AutoSize = true;
-            lblWorkDir.Font = new Font("맑은 고딕", 9F);
-            lblWorkDir.Location = new Point(15, 151);
-            lblWorkDir.Name = "lblWorkDir";
-            lblWorkDir.Size = new Size(86, 15);
-            lblWorkDir.TabIndex = 12;
-            lblWorkDir.Text = "작업 디렉토리:";
             // 
             // cmbServiceType
             // 
             cmbServiceType.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbServiceType.Font = new Font("맑은 고딕", 9F);
             cmbServiceType.FormattingEnabled = true;
-            cmbServiceType.Items.AddRange(new object[] { "HTTP", "HTTPS", "TCP" });
+            cmbServiceType.Items.AddRange(new object[] { "HTTP", "HTTPS" });
             cmbServiceType.Location = new Point(90, 70);
             cmbServiceType.Name = "cmbServiceType";
             cmbServiceType.Size = new Size(170, 23);
@@ -197,7 +395,7 @@
             chkLogFile.Checked = true;
             chkLogFile.CheckState = CheckState.Checked;
             chkLogFile.Font = new Font("맑은 고딕", 9F);
-            chkLogFile.Location = new Point(15, 245);
+            chkLogFile.Location = new Point(15, 170);
             chkLogFile.Name = "chkLogFile";
             chkLogFile.Size = new Size(106, 19);
             chkLogFile.TabIndex = 7;
@@ -208,7 +406,7 @@
             // 
             chkHttps.AutoSize = true;
             chkHttps.Font = new Font("맑은 고딕", 9F);
-            chkHttps.Location = new Point(15, 220);
+            chkHttps.Location = new Point(15, 145);
             chkHttps.Name = "chkHttps";
             chkHttps.Size = new Size(165, 19);
             chkHttps.TabIndex = 6;
@@ -277,122 +475,74 @@
             lblPort.TabIndex = 0;
             lblPort.Text = "로컬 포트:";
             // 
-            // grpStatus
+            // panel4
             // 
-            grpStatus.Controls.Add(btnCopyUrl);
-            grpStatus.Controls.Add(lblUrl);
-            grpStatus.Controls.Add(txtStatus);
-            grpStatus.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
-            grpStatus.Location = new Point(12, 306);
-            grpStatus.Name = "grpStatus";
-            grpStatus.Size = new Size(276, 110);
-            grpStatus.TabIndex = 5;
-            grpStatus.TabStop = false;
-            grpStatus.Text = "📡 상태";
-            // 
-            // btnCopyUrl
-            // 
-            btnCopyUrl.BackColor = Color.FromArgb(33, 150, 243);
-            btnCopyUrl.Cursor = Cursors.Hand;
-            btnCopyUrl.FlatAppearance.BorderSize = 0;
-            btnCopyUrl.FlatStyle = FlatStyle.Flat;
-            btnCopyUrl.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
-            btnCopyUrl.ForeColor = Color.White;
-            btnCopyUrl.Location = new Point(85, 70);
-            btnCopyUrl.Name = "btnCopyUrl";
-            btnCopyUrl.Size = new Size(110, 30);
-            btnCopyUrl.TabIndex = 5;
-            btnCopyUrl.Text = "📋 URL 복사";
-            btnCopyUrl.UseVisualStyleBackColor = false;
-            btnCopyUrl.Click += btnCopyUrl_Click;
-            // 
-            // lblUrl
-            // 
-            lblUrl.AutoSize = true;
-            lblUrl.Font = new Font("맑은 고딕", 9F);
-            lblUrl.ForeColor = Color.FromArgb(100, 100, 100);
-            lblUrl.Location = new Point(10, 23);
-            lblUrl.Name = "lblUrl";
-            lblUrl.Size = new Size(59, 15);
-            lblUrl.TabIndex = 4;
-            lblUrl.Text = "터널 URL:";
-            // 
-            // grpLog
-            // 
-            grpLog.Controls.Add(btnClearLog);
-            grpLog.Controls.Add(txtLog);
-            grpLog.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
-            grpLog.Location = new Point(299, 12);
-            grpLog.Name = "grpLog";
-            grpLog.Size = new Size(485, 577);
-            grpLog.TabIndex = 6;
-            grpLog.TabStop = false;
-            grpLog.Text = "📝 로그";
-            // 
-            // btnClearLog
-            // 
-            btnClearLog.BackColor = Color.FromArgb(150, 150, 150);
-            btnClearLog.Cursor = Cursors.Hand;
-            btnClearLog.FlatAppearance.BorderSize = 0;
-            btnClearLog.FlatStyle = FlatStyle.Flat;
-            btnClearLog.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
-            btnClearLog.ForeColor = Color.White;
-            btnClearLog.Location = new Point(6, 537);
-            btnClearLog.Name = "btnClearLog";
-            btnClearLog.Size = new Size(473, 30);
-            btnClearLog.TabIndex = 3;
-            btnClearLog.Text = "🗑️ 로그 초기화";
-            btnClearLog.UseVisualStyleBackColor = false;
-            btnClearLog.Click += btnClearLog_Click;
+            panel4.Dock = DockStyle.Left;
+            panel4.Location = new Point(303, 10);
+            panel4.Name = "panel4";
+            panel4.Size = new Size(10, 446);
+            panel4.TabIndex = 8;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.White;
-            ClientSize = new Size(796, 601);
+            ClientSize = new Size(839, 466);
             Controls.Add(grpLog);
-            Controls.Add(grpStatus);
-            Controls.Add(grpSettings);
-            Controls.Add(btnStop);
-            Controls.Add(btnStart);
+            Controls.Add(panel4);
+            Controls.Add(panel1);
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MinimumSize = new Size(674, 470);
             Name = "MainForm";
+            Padding = new Padding(10);
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             Shown += MainForm_Shown;
-            grpSettings.ResumeLayout(false);
-            grpSettings.PerformLayout();
-            grpStatus.ResumeLayout(false);
-            grpStatus.PerformLayout();
             grpLog.ResumeLayout(false);
             grpLog.PerformLayout();
+            panel3.ResumeLayout(false);
+            panel1.ResumeLayout(false);
+            panel2.ResumeLayout(false);
+            grpStatus.ResumeLayout(false);
+            grpStatus.PerformLayout();
+            grpSettings.ResumeLayout(false);
+            grpSettings.PerformLayout();
             ResumeLayout(false);
         }
 
         #endregion
-
-        private Button btnStart;
-        private Button btnStop;
         private TextBox txtLog;
+        private GroupBox grpLog;
+        private Panel panel1;
+        private GroupBox grpStatus;
+        private Button btnCopyUrl;
+        private Label lblUrl;
         private TextBox txtStatus;
         private GroupBox grpSettings;
-        private Label lblPort;
-        private TextBox txtPort;
-        private Label lblLogLevel;
-        private ComboBox cmbLogLevel;
-        private Label lblProtocol;
-        private ComboBox cmbProtocol;
-        private CheckBox chkHttps;
-        private CheckBox chkLogFile;
-        private GroupBox grpStatus;
-        private Label lblUrl;
-        private Button btnCopyUrl;
-        private GroupBox grpLog;
-        private Button btnClearLog;
         private ComboBox cmbServiceType;
         private Label lblServiceType;
-        private TextBox txtWorkingDirectory;
-        private Label lblWorkDir;
-        private Button btnBrowseWorkDir;
+        private CheckBox chkLogFile;
+        private CheckBox chkHttps;
+        private ComboBox cmbProtocol;
+        private Label lblProtocol;
+        private ComboBox cmbLogLevel;
+        private Label lblLogLevel;
+        private TextBox txtPort;
+        private Label lblPort;
+        private Button btnStop;
+        private Button btnStart;
+        private Panel panel2;
+        private Panel panel3;
+        private Button btnClearLog;
+        private Label label1;
+        private Label lblUptime;
+        private Button btnSaveLog;
+        private Button btnQRCode;
+        private Panel panel4;
+        private Button btnViewLogFile;
+        private Panel panel5;
+        private Panel panel6;
+        private Button btnOpenBrowser;
     }
 }

@@ -10,12 +10,28 @@
     <Title>Cloudflared Tunnel Host</Title>
     <Copyright>© 2024-2026 Ji Beak min(tharu8813). All rights reserved.</Copyright>
     <PackageIcon>icon.png</PackageIcon>
-    <Authors>Ji Beak min(tharu8813)</Authors>
+    <Authors></Authors>
     <Version>1.0.0</Version>
+    <StartupObject>CloudflaredTunnelHost.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
