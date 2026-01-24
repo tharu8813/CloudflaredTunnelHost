@@ -17,6 +17,73 @@ namespace CloudflaredTunnelHost.Start {
         private void MainForm_Load(object sender, EventArgs e) {
             this.Text = "Cloudflared Tunnel Host";
 
+            // 콤보박스 초기값 설정
+            cmbServiceType.SelectedIndex = 0; // HTTP
+            cmbLogLevel.SelectedIndex = 0; // 없음
+            cmbProtocol.SelectedIndex = 0; // 없음
+
+            // 기본 작업 디렉토리 (exe 위치)
+            workingDirectory = Application.StartupPath;
+            txtWorkingDirectory.Text = workingDirectory;
+
+            AppendLog("프로그램이 시작되었습니다.");
+            AppendLog($"기본 작업 디렉토리: {workingDirectory}");
+        }
+
+        private void MainForm_Shown(object sender, EventArgs e) {
+            if (!File.Exists(Tol.cloudflaredPath)) {
+                if (Tol.ShowQuestion("cloudflared.exe가 존재하지 않습니다. 다운받으시겠습니까?") == DialogResult.Yes) {
+                    if (new Download().ShowDialog() != DialogResult.OK) {
+                        Application.Exit();
+                    }
+                } else {
+                    Application.Exit();
+                }
+            } else {
+                AppendLog($"cloudflared.exe 경로: {Tol.cloudflaredPath}");
+            }
+        }
+
+        private void btnStart_Click(object sender, EventArgs e) {
+            if (isRunning) return;
+
+            // 포트 유효성 검사
+            if (!int.TryParse(txtPort.Text, out int port) || port < 1 || port > 65535) {
+                Tol.ShowError("올바른 포트 번호를 입력해주세요 (1-65535)");
+                return;
+            }
+
+            StartTunnel();
+        }
+
+        private void btnStop_Click(object sender, EventArgs e) {
+            if (!isRunning) return;
+            StopTunnel();
+        }
+
+        private void StartTunnel() {
+            try {
+                string serviceType = cmbServiceType.SelectedItem?.ToString().ToLower() ?? "http";
+                string port = txtPort.Text;
+
+                // Arguments 구성 (기본)
+                string args = $"tunnel --url {serviceType}://0.0.0.0:{port}";
+
+                // 로그 레벨 추가 (없음이 아닐 때만)
+                if (cmbLogLevel.SelectedIndex > 0) {
+                    string logLevel = cmbLogLevel.SelectedItem?.ToString();
+                    args += $" --loglevel {logLevel}";
+                }
+
+                // 프로토콜 추가 (없음이 아닐 때만)
+                if (cmbProtocol.SelectedIndex > 0) {
+                    string protocolType = cmbProtocol.SelectedItem?.ToString();
+                    args += $" --protocol {protocolType}";
+                }
+
+        private void MainForm_Load(object sender, EventArgs e) {
+            this.Text = "Cloudflared Tunnel Host";
+
             cmbServiceType.SelectedIndex = 0; // HTTP
             cmbLogLevel.SelectedIndex = 0; // 없음
             cmbProtocol.SelectedIndex = 0; // 없음
