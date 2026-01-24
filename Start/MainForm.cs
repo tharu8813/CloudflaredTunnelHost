@@ -17,10 +17,12 @@ namespace CloudflaredTunnelHost.Start {
         private void MainForm_Load(object sender, EventArgs e) {
             this.Text = "Cloudflared Tunnel Host";
 
+            // 콤보박스 초기값 설정
             cmbServiceType.SelectedIndex = 0; // HTTP
             cmbLogLevel.SelectedIndex = 0; // 없음
             cmbProtocol.SelectedIndex = 0; // 없음
 
+            // 기본 작업 디렉토리 (exe 위치)
             workingDirectory = Application.StartupPath;
             txtWorkingDirectory.Text = workingDirectory;
 
@@ -65,7 +67,7 @@ namespace CloudflaredTunnelHost.Start {
                 string port = txtPort.Text;
 
                 // Arguments 구성 (기본)
-                string args = $"tunnel --url {serviceType}://localhost:{port}";
+                string args = $"tunnel --url {serviceType}://0.0.0.0:{port}";
 
                 // 로그 레벨 추가 (없음이 아닐 때만)
                 if (cmbLogLevel.SelectedIndex > 0) {
@@ -78,76 +80,11 @@ namespace CloudflaredTunnelHost.Start {
                     string protocolType = cmbProtocol.SelectedItem?.ToString();
                     args += $" --protocol {protocolType}";
                 }
-
-                // HTTPS 자체 서명 인증서 (서비스 타입이 HTTPS일 때만)
-                if (serviceType == "https" && chkHttps.Checked) {
-                    args += " --no-tls-verify";
-                }
-
-                // 로그 파일
-                if (chkLogFile.Checked) {
-                    args += " --logfile cloudflared.log";
-                }
-
-                AppendLog($"터널 시작 중...");
-                AppendLog($"작업 디렉토리: {workingDirectory}");
-                AppendLog($"명령어: cloudflared {args}");
-
-                cloudflaredProcess = new Process {
-                    StartInfo = new ProcessStartInfo {
-                        FileName = Tol.cloudflaredPath,
-                        Arguments = args,
-                        WorkingDirectory = workingDirectory, // 작업 디렉토리 설정
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true,
-                        StandardOutputEncoding = System.Text.Encoding.UTF8,
-                        StandardErrorEncoding = System.Text.Encoding.UTF8
-                    }
-                };
-
-                // 출력 이벤트 핸들러
-                cloudflaredProcess.OutputDataReceived += (s, e) => {
-                    if (!string.IsNullOrEmpty(e.Data)) {
-                        BeginInvoke(new Action(() => {
-                            AppendLog(e.Data);
-                            ParseTunnelUrl(e.Data);
-                        }));
-                    }
-                };
-
-                cloudflaredProcess.ErrorDataReceived += (s, e) => {
-                    if (!string.IsNullOrEmpty(e.Data)) {
-                        BeginInvoke(new Action(() => {
-                            // cloudflared는 모든 로그를 stderr로 출력하므로 [ERROR] 태그 제거
-                            AppendLog(e.Data);
-                            ParseTunnelUrl(e.Data);
-                        }));
-                    }
-                };
-
-                // 프로세스 종료 이벤트
-                cloudflaredProcess.EnableRaisingEvents = true;
-                cloudflaredProcess.Exited += (s, e) => {
-                    BeginInvoke(new Action(() => {
-                        AppendLog("터널이 종료되었습니다.");
-                        UpdateUIState(false);
-                    }));
-                };
-
-                cloudflaredProcess.Start();
-                cloudflaredProcess.BeginOutputReadLine();
-                cloudflaredProcess.BeginErrorReadLine();
-
-                isRunning = true;
-                UpdateUIState(true);
-
             } catch (Exception ex) {
                 Tol.ShowError($"터널 시작 실패: {ex.Message}");
-                AppendLog($"[ERROR] {ex.Message}");
             }
         }
+
 
         private void StopTunnel() {
             try {
