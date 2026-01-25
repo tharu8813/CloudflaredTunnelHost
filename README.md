@@ -26,20 +26,6 @@
 git clone https://github.com/yourusername/CloudflaredTunnelHost.git
 ```
 
-## 프로젝트 구조
-
-```
-CloudflaredTunnelHost/
-├── Start/
-│   ├── MainForm.cs
-│   ├── MainForm.Designer.cs
-│   └── Download.cs
-│   └── QRViewr.cs
-├── Tools/
-│   └── Tol.cs
-└── Program.cs
-```
-
 ## 버그 리포트
 
 버그를 발견하셨나요? [Issues](https://github.com/tharu8813/CloudflaredTunnelHost/issues)에 등록해주세요.
