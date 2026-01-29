@@ -5,6 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Windows](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-GPL3.0-green.svg)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/tharu8813/CloudflaredTunnelHost?label=Download)]( https://github.com/tharu8813/CloudflaredTunnelHost/releases/latest)
 
 **Cloudflared Tunnel Host**는 Cloudflare Tunnel을 간편하게 관리할 수 있는 Windows Forms 애플리케이션입니다.  
 로컬 서버를 인터넷에 노출시킬 수 있으며, GUI를 통해 쉽게 터널을 시작하고 관리할 수 있습니다.
