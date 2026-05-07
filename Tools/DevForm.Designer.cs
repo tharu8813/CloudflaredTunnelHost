@@ -32,7 +32,7 @@
             // 
             // DevForm
             // 
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
             Font = new Font("맑은 고딕", 9F, FontStyle.Regular, GraphicsUnit.Point, 129);
             FormBorderStyle = FormBorderStyle.FixedSingle;
