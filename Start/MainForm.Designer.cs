@@ -259,7 +259,7 @@
             btnOpenBrowser.ForeColor = Color.White;
             btnOpenBrowser.Location = new Point(16, 111);
             btnOpenBrowser.Name = "btnOpenBrowser";
-            btnOpenBrowser.Size = new Size(141, 30);
+            btnOpenBrowser.Size = new Size(129, 30);
             btnOpenBrowser.TabIndex = 9;
             btnOpenBrowser.Text = "🌐 브라우저로 열기";
             btnOpenBrowser.UseVisualStyleBackColor = false;
@@ -274,9 +274,9 @@
             btnQRCode.FlatStyle = FlatStyle.Flat;
             btnQRCode.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
             btnQRCode.ForeColor = Color.White;
-            btnQRCode.Location = new Point(226, 111);
+            btnQRCode.Location = new Point(219, 111);
             btnQRCode.Name = "btnQRCode";
-            btnQRCode.Size = new Size(50, 30);
+            btnQRCode.Size = new Size(57, 30);
             btnQRCode.TabIndex = 8;
             btnQRCode.Text = "📱 QR";
             btnQRCode.UseVisualStyleBackColor = false;
@@ -313,9 +313,9 @@
             btnCopyUrl.FlatStyle = FlatStyle.Flat;
             btnCopyUrl.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
             btnCopyUrl.ForeColor = Color.White;
-            btnCopyUrl.Location = new Point(163, 111);
+            btnCopyUrl.Location = new Point(151, 111);
             btnCopyUrl.Name = "btnCopyUrl";
-            btnCopyUrl.Size = new Size(57, 30);
+            btnCopyUrl.Size = new Size(62, 30);
             btnCopyUrl.TabIndex = 5;
             btnCopyUrl.Text = "📋 복사";
             btnCopyUrl.UseVisualStyleBackColor = false;

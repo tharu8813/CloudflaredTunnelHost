@@ -47,7 +47,6 @@
             Name = "QRViewer";
             ShowIcon = false;
             Text = "QR Viewer";
-            Deactivate += QRViewer_Deactivate;
             Load += QRViewer_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
