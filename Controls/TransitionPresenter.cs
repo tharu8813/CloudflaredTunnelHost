@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using CloudflaredTunnelHost.Infrastructure;
 
 namespace CloudflaredTunnelHost.Controls;
 
@@ -18,6 +19,10 @@ public sealed class TransitionPresenter : Grid
         nameof(Index), typeof(int), typeof(TransitionPresenter), new PropertyMetadata(0, (d, _) => ((TransitionPresenter)d).Prepare()));
     public static readonly DependencyProperty HorizontalTransitionIndexProperty = DependencyProperty.Register(
         nameof(HorizontalTransitionIndex), typeof(int), typeof(TransitionPresenter), new PropertyMetadata(-1));
+    public static readonly DependencyProperty TransitionDurationProperty = DependencyProperty.Register(
+        nameof(TransitionDuration), typeof(int), typeof(TransitionPresenter), new PropertyMetadata(MotionProfile.PageDurationMs));
+    public static readonly DependencyProperty TravelProperty = DependencyProperty.Register(
+        nameof(Travel), typeof(double), typeof(TransitionPresenter), new PropertyMetadata(MotionProfile.PageTravel));
     public static readonly DependencyProperty ContentTemplateProperty = DependencyProperty.Register(
         nameof(ContentTemplate), typeof(DataTemplate), typeof(TransitionPresenter));
     public static readonly DependencyProperty ContentStringFormatProperty = DependencyProperty.Register(
@@ -36,6 +41,8 @@ public sealed class TransitionPresenter : Grid
     public object? Content { get => GetValue(ContentProperty); set => SetValue(ContentProperty, value); }
     public int Index { get => (int)GetValue(IndexProperty); set => SetValue(IndexProperty, value); }
     public int HorizontalTransitionIndex { get => (int)GetValue(HorizontalTransitionIndexProperty); set => SetValue(HorizontalTransitionIndexProperty, value); }
+    public int TransitionDuration { get => (int)GetValue(TransitionDurationProperty); set => SetValue(TransitionDurationProperty, value); }
+    public double Travel { get => (double)GetValue(TravelProperty); set => SetValue(TravelProperty, value); }
     public DataTemplate? ContentTemplate { get => (DataTemplate?)GetValue(ContentTemplateProperty); set => SetValue(ContentTemplateProperty, value); }
     public string? ContentStringFormat { get => (string?)GetValue(ContentStringFormatProperty); set => SetValue(ContentStringFormatProperty, value); }
     public DataTemplateSelector? ContentTemplateSelector { get => (DataTemplateSelector?)GetValue(ContentTemplateSelectorProperty); set => SetValue(ContentTemplateSelectorProperty, value); }
@@ -52,7 +59,8 @@ public sealed class TransitionPresenter : Grid
         Loaded += (_, _) => _previousIndex = Index;
         Unloaded += (_, _) => Stop();
         IsVisibleChanged += (_, e) => { if (!(bool)e.NewValue) Stop(); };
-        SizeChanged += (_, _) => Stop();
+        // Page layout can resize mid-transition when contextual footer actions collapse.
+        // Keep the transition running rather than snapping to its final state.
     }
 
     private static void ContentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -97,16 +105,17 @@ public sealed class TransitionPresenter : Grid
         var direction = Index < _previousIndex ? -1 : 1;
         var horizontal = HorizontalTransitionIndex < 0 || Index == HorizontalTransitionIndex || _previousIndex == HorizontalTransitionIndex;
         _previousIndex = Index;
-        // Use a restrained offset on the active axis so the transition feels connected, not like a carousel.
+        // A single restrained transition belongs to the content presenter.
         var axis = horizontal ? TranslateTransform.XProperty : TranslateTransform.YProperty;
-        var extent = horizontal ? ActualWidth : ActualHeight;
-        var distance = direction * Math.Clamp(extent * .045, 20, 42);
+        var duration = Math.Clamp(TransitionDuration, 0, 800);
+        var distance = direction * Math.Clamp(Travel, 0, 48);
+        if (duration == 0) { Stop(); return; }
         var revision = _revision;
-        Animate(_outgoingOffset, axis, 0, -distance * .35, 320);
-        Animate(_outgoing, OpacityProperty, 1, 0, 320);
+        Animate(_outgoingOffset, axis, 0, -distance * .3, duration);
+        Animate(_outgoing, OpacityProperty, 1, 0, duration);
         _incoming.Opacity = 1;
-        Animate(_incoming, OpacityProperty, 0, 1, 320);
-        Animate(_incomingOffset, axis, distance, 0, 340,
+        Animate(_incoming, OpacityProperty, 0, 1, duration);
+        Animate(_incomingOffset, axis, distance, 0, duration,
             (_, _) => { if (revision == _revision) Stop(); });
     }
 
@@ -114,7 +123,7 @@ public sealed class TransitionPresenter : Grid
     {
         var animation = new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(milliseconds))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            EasingFunction = MotionProfile.EaseOut()
         };
         if (completed is not null) animation.Completed += completed;
         target.BeginAnimation(property, animation, HandoffBehavior.SnapshotAndReplace);

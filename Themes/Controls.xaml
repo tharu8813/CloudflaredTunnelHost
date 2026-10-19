@@ -20,10 +20,21 @@
         <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
             <Border x:Name="Shell" CornerRadius="6" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" RenderTransformOrigin=".5,.5">
                 <Border.RenderTransform><ScaleTransform/></Border.RenderTransform>
-                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="True"/>
+                <Grid>
+                    <Border x:Name="HoverTint" Background="{DynamicResource HoverBrush}" CornerRadius="5" Opacity="0" IsHitTestVisible="False"/>
+                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="True"/>
+                </Grid>
             </Border>
             <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Shell" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter TargetName="Shell" Property="Opacity" Value=".9"/></Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Shell" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                    <Trigger.EnterActions><BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="HoverTint" Storyboard.TargetProperty="Opacity" To=".4" Duration="0:0:0.14"/>
+                    </Storyboard></BeginStoryboard></Trigger.EnterActions>
+                    <Trigger.ExitActions><BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="HoverTint" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14"/>
+                    </Storyboard></BeginStoryboard></Trigger.ExitActions>
+                </Trigger>
                 <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Shell" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
                 <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Shell" Property="Opacity" Value=".38"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
             </ControlTemplate.Triggers>
@@ -58,12 +69,12 @@
             <Grid KeyboardNavigation.TabNavigation="Local">
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                 <TabPanel IsItemsHost="True" Margin="0,0,0,16" KeyboardNavigation.TabIndex="0"/>
-                <c:TransitionPresenter x:Name="PART_SelectedContentHost" Grid.Row="1" Content="{TemplateBinding SelectedContent}" Index="{TemplateBinding SelectedIndex}" ContentTemplate="{TemplateBinding SelectedContentTemplate}" ContentTemplateSelector="{TemplateBinding SelectedContentTemplateSelector}" ContentStringFormat="{TemplateBinding SelectedContentStringFormat}"/>
+                <c:TransitionPresenter x:Name="PART_SelectedContentHost" Grid.Row="1" TransitionDuration="205" Travel="12" Content="{TemplateBinding SelectedContent}" Index="{TemplateBinding SelectedIndex}" ContentTemplate="{TemplateBinding SelectedContentTemplate}" ContentTemplateSelector="{TemplateBinding SelectedContentTemplateSelector}" ContentStringFormat="{TemplateBinding SelectedContentStringFormat}"/>
             </Grid>
         </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="TabItem">
-        <Setter Property="i:Motion.Interactive" Value="True"/>
+        <Setter Property="i:Motion.Interactive" Value="False"/>
         <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/><Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/><Setter Property="Padding" Value="14,10"/>
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
