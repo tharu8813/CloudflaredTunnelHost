@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Input;
 using System.Windows.Threading;
 using CloudflaredTunnelHost.Core.Models;
 using CloudflaredTunnelHost.Core.Services;
@@ -50,7 +51,36 @@ internal static class Program
                 Assert(trayAvailable || !requireTray, "native tray was created");
                 if (!trayAvailable) Console.WriteLine("SKIP native tray integration: no accessible Windows shell (CI mode)");
                 Assert(model.StartCommand.CanExecute(null) && !model.CopyUrlCommand.CanExecute(null), "Idle command enablement");
+                var portInput = (TextBox)window.FindName("PortInput");
+                foreach (var port in new[] { "", "0", "65536", "abc", "-1" })
+                {
+                    model.PortText = port;
+                    Assert(model.PortError.Length > 0 && !model.StartCommand.CanExecute(null) && !model.SaveSettingsCommand.CanExecute(null), "invalid port blocks start/save: " + port);
+                    Assert(Validation.GetHasError(portInput), "port validation reaches the input border");
+                }
+                foreach (var port in new[] { "1", "65535", "3000" })
+                {
+                    model.PortText = port;
+                    Assert(model.StartCommand.CanExecute(null) && !Validation.GetHasError(portInput), "valid port restores commands and input: " + port);
+                }
+                model.PortText = "8000";
+                foreach (var retry in new[] { "", "-1", "11", "xx" })
+                {
+                    model.RetryText = retry;
+                    Assert(model.RetryError.Length > 0 && !model.StartCommand.CanExecute(null), "invalid retry blocks start: " + retry);
+                }
+                model.RetryText = "0"; Assert(!model.HasInputErrors, "zero retries is valid");
+                model.RetryText = "10"; Assert(!model.HasInputErrors, "ten retries is valid");
+                model.RetryText = "3";
+                model.AllowedEmails = "invalid-address";
+                Assert(model.EmailError.Length > 0 && !model.StartCommand.CanExecute(null) && !model.SaveSettingsCommand.CanExecute(null), "invalid email blocks start/save");
+                model.AllowedEmails = "dev@example.com"; Assert(!model.HasInputErrors, "valid email restores commands");
+                model.AllowedEmails = ""; Assert(!model.HasInputErrors, "public access remains valid");
                 window.Width = 860; window.Height = 640;
+                await Task.Delay(250); window.UpdateLayout();
+                var contentScroll = (ScrollViewer)window.FindName("ContentScroll");
+                AssertVisibleWithin(portInput, contentScroll, "local port is visible without scrolling at minimum size");
+                Assert(Math.Abs(portInput.ActualHeight - ((ComboBox)window.FindName("ServiceTypeInput")).ActualHeight) < 2, "service and port inputs share the same height");
                 typeof(MainViewModel).GetProperty(nameof(model.IsWorking))!.SetValue(model, true);
                 typeof(MainViewModel).GetMethod("SetWork", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(model, ["다운로드 진행률 표시 검증"]);
                 await Task.Delay(250); window.UpdateLayout();
@@ -77,10 +107,38 @@ internal static class Program
                         Render(window, Path.Combine(artifacts, $"dashboard-{theme}-{size.Item1}.png"), 96);
                         foreach (var dpi in new[] { 120d, 144d, 192d }) Render(window, Path.Combine(artifacts, $"dashboard-{theme}-{size.Item1}-{dpi}.png"), dpi);
                     }
-                    model.IsAdvanced = true; window.Width = 1180; window.Height = 860;
-                    await Task.Delay(250); Render(window, Path.Combine(artifacts, $"settings-{theme}.png"), 96);
+                    model.IsAdvanced = true;
+                    foreach (var size in new[] { (1180, 860), (860, 640) })
+                    {
+                        window.Width = size.Item1; window.Height = size.Item2;
+                        contentScroll.ScrollToTop();
+                        await Task.Delay(250);
+                        AssertVisibleWithin((Button)window.FindName("SaveSettingsButton"), (FrameworkElement)window.Content, "settings save remains visible");
+                        Render(window, Path.Combine(artifacts, $"settings-{theme}-{size.Item1}.png"), 96);
+                        contentScroll.ScrollToEnd(); await Task.Delay(100);
+                        Render(window, Path.Combine(artifacts, $"settings-bottom-{theme}-{size.Item1}.png"), 96);
+                    }
+                    Assert(contentScroll.VerticalOffset > 0, "settings is scrolled before navigation");
+                    model.ShowDashboardCommand.Execute(null); await Task.Delay(100);
+                    Assert(contentScroll.VerticalOffset == 0, "dashboard navigation resets scroll");
+                    model.LogsOpen = true; contentScroll.ScrollToEnd(); await Task.Delay(100);
+                    model.ShowSettingsCommand.Execute(null); await Task.Delay(100);
+                    Assert(contentScroll.VerticalOffset == 0, "settings navigation resets scroll");
+                    model.LogsOpen = false;
                 }
                 model.IsAdvanced = false;
+                model.PortText = "70000"; await Task.Delay(250);
+                Render(window, Path.Combine(artifacts, "invalid-port-Light-860.png"), 96);
+                model.IsAdvanced = true; model.RetryText = "11"; model.AllowedEmails = "invalid-address";
+                await Task.Delay(250);
+                var emailsInput = (TextBox)window.FindName("AllowedEmailsInput");
+                var retryInput = (TextBox)window.FindName("RetryInput");
+                Assert(Validation.GetHasError(emailsInput) && Validation.GetHasError(retryInput), "email and retry validation reaches both fields");
+                emailsInput.BringIntoView(new Rect(0, 0, emailsInput.ActualWidth, emailsInput.ActualHeight + 60)); await Task.Delay(100);
+                Render(window, Path.Combine(artifacts, "invalid-email-Light-860.png"), 96);
+                retryInput.BringIntoView(new Rect(0, 0, retryInput.ActualWidth, retryInput.ActualHeight + 60)); await Task.Delay(100);
+                Render(window, Path.Combine(artifacts, "invalid-retry-Light-860.png"), 96);
+                model.PortText = "8000"; model.RetryText = "3"; model.AllowedEmails = ""; model.IsAdvanced = false;
                 // Inject a service snapshot only in this test to verify bindings without publishing a fake tunnel.
                 typeof(MainViewModel).GetField("_snapshot", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(model,
                     new TunnelSnapshot(TunnelState.Connecting, "로컬 서버 대기 테스트", "https://test.trycloudflare.com", EdgeReady: true, LocalReady: false));
@@ -94,11 +152,20 @@ internal static class Program
                 await Task.Delay(250); Render(window, Path.Combine(artifacts, "connected-Light.png"), 96);
                 model.ShowQrCommand.Execute(null); await Task.Delay(250);
                 Assert(app.Windows.OfType<QrWindow>().Any(), "QR window opens");
-                app.Windows.OfType<QrWindow>().First().Close();
+                var qrWindow = app.Windows.OfType<QrWindow>().First();
+                Render(qrWindow, Path.Combine(artifacts, "qr-window-Light.png"), 96);
+                qrWindow.Width = 360; qrWindow.Height = 480; await Task.Delay(100);
+                AssertVisibleWithin((Button)qrWindow.FindName("CopyImageButton"), (FrameworkElement)qrWindow.Content, "QR copy action remains visible at minimum size");
+                AssertVisibleWithin((Button)qrWindow.FindName("CloseButton"), (FrameworkElement)qrWindow.Content, "QR close action remains visible at minimum size");
+                Render(qrWindow, Path.Combine(artifacts, "qr-window-Light-360.png"), 96);
+                qrWindow.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(qrWindow), 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+                Assert(!app.Windows.OfType<QrWindow>().Any(), "Escape closes the QR window");
                 for (int i = 0; i < 10000; i++) model.Logs.AppendBatch([new(DateTimeOffset.Now, "INFO", "stress log " + i)]);
                 Assert(model.Logs.Count == 2000, "UI log collection bounded at 2000");
-                model.Search = "9999"; Assert(model.FilteredLogs.Cast<LogEntry>().Count() == 1, "log search");
-                model.Search = ""; model.LevelFilter = "ERROR"; Assert(model.FilteredLogs.IsEmpty, "log level filter");
+                model.Search = "9999"; Assert(model.FilteredLogs.Cast<LogEntry>().Count() == 1 && model.CopyLogsCommand.CanExecute(null) && model.SaveLogsCommand.CanExecute(null), "log search and export enablement");
+                model.Search = ""; model.LevelFilter = "ERROR"; Assert(model.FilteredLogs.IsEmpty && !model.HasFilteredLogs && !model.CopyLogsCommand.CanExecute(null) && !model.SaveLogsCommand.CanExecute(null), "empty filter disables exports");
+                model.LogsOpen = true; contentScroll.ScrollToEnd(); await Task.Delay(250);
+                Render(window, Path.Combine(artifacts, "logs-empty-Light.png"), 96);
                 model.LevelFilter = "전체"; model.LogsOpen = true;
                 app.Resources.MergedDictionaries[0] = Dictionary("Dark"); model.Theme = "Dark";
                 ((ScrollViewer)window.FindName("ContentScroll")).ScrollToEnd();
@@ -107,6 +174,8 @@ internal static class Program
                 var realized = Enumerable.Range(0, model.Logs.Count).Count(index => list.ItemContainerGenerator.ContainerFromIndex(index) is not null);
                 Assert(realized < 100, "log list virtualization");
                 Render(window, Path.Combine(artifacts, "logs-Dark.png"), 96);
+                model.ClearLogsCommand.Execute(null);
+                Assert(!model.HasFilteredLogs && !model.ClearLogsCommand.CanExecute(null), "clearing logs updates the empty state and command");
                 Assert(listener.Errors.Count == 0, "no WPF binding errors: " + string.Join("\n", listener.Errors));
                 quittingViaModel = true;
                 var tray = typeof(MainWindow).GetField("_tray", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window);
@@ -116,7 +185,7 @@ internal static class Program
                     menu.Items.OfType<MenuItem>().First(item => Equals(item.Header, "프로그램 완전 종료")).Command.Execute(null);
                 }
                 else model.ExitCommand.Execute(null);
-                Console.WriteLine("PASS WPF startup, SVG assets, QR generation/window, command states, log stress/search/filter, dark/light layouts, 125/150/200% raster rendering, shutdown");
+                Console.WriteLine("PASS WPF startup, inline validation, navigation scroll, fixed actions, SVG assets, QR/Escape, command states, log stress/search/filter/empty state, dark/light layouts, 125/150/200% raster rendering, shutdown");
             }
             catch (Exception ex) { failures.Add(ex.ToString()); Console.WriteLine("FAIL " + ex); }
             finally
@@ -132,12 +201,25 @@ internal static class Program
     }
     private static ResourceDictionary Dictionary(string name) => new() { Source = new Uri($"pack://application:,,,/CloudflaredTunnelHost;component/Themes/{name}.xaml") };
     private static void Assert(bool ok, string message) { if (!ok) throw new Exception(message); }
+    private static void AssertVisibleWithin(FrameworkElement element, FrameworkElement viewport, string message)
+    {
+        element.UpdateLayout(); viewport.UpdateLayout();
+        var bounds = element.TransformToAncestor(viewport).TransformBounds(new Rect(element.RenderSize));
+        Assert(element.IsVisible && bounds.Top >= 0 && bounds.Bottom <= viewport.ActualHeight && bounds.Left >= 0 && bounds.Right <= viewport.ActualWidth, message);
+    }
     private static void Render(Window window, string path, double dpi)
     {
         var root = (FrameworkElement)window.Content;
         root.UpdateLayout();
         var bitmap = new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth * dpi / 96), (int)Math.Ceiling(root.ActualHeight * dpi / 96), dpi, dpi, PixelFormats.Pbgra32);
-        bitmap.Render(root);
+        var background = new DrawingVisual();
+        var offset = VisualTreeHelper.GetOffset(root);
+        using (var drawing = background.RenderOpen())
+        {
+            drawing.DrawRectangle(window.Background, null, new Rect(root.RenderSize));
+            drawing.DrawRectangle(new VisualBrush(root) { ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(offset.X, offset.Y, root.ActualWidth, root.ActualHeight) }, null, new Rect(root.RenderSize));
+        }
+        bitmap.Render(background);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using var file = File.Create(path); encoder.Save(file);
     }

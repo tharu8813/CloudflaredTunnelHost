@@ -36,7 +36,11 @@ public partial class MainWindow : Window
         {
             Restore(); _qr?.Close(); _qr = new QrWindow(model) { Owner = this }; _qr.Closed += (_, _) => _qr = null; _qr.Show();
         };
-        model.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(model.QrImage) && model.QrImage is null) _qr?.Close(); };
+        model.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(model.QrImage) && model.QrImage is null) _qr?.Close();
+            if (e.PropertyName == nameof(model.IsAdvanced)) ContentScroll.ScrollToTop();
+        };
         Application.Current.SessionEnding += HandleSessionEnding;
     }
     private void HideToTray() { Hide(); ShowInTaskbar = false; }

@@ -14,7 +14,7 @@ using Microsoft.Win32;
 
 namespace CloudflaredTunnelHost.ViewModels;
 
-public sealed class MainViewModel : ObservableObject
+public sealed class MainViewModel : ObservableObject, IDataErrorInfo
 {
     private readonly AppPaths _paths;
     private readonly SettingsService _storage;
@@ -64,9 +64,10 @@ public sealed class MainViewModel : ObservableObject
         FilteredLogs = CollectionViewSource.GetDefaultView(Logs);
         FilteredLogs.Filter = value => value is LogEntry entry && (LevelFilter == "전체" || entry.Level == LevelFilter)
             && (entry.Message.Contains(Search, StringComparison.CurrentCultureIgnoreCase) || entry.Level.Contains(Search, StringComparison.OrdinalIgnoreCase));
-        StartCommand = new AsyncCommand(() => MaintenanceAsync(StartAsync), ReportError, () => CanEdit);
+        FilteredLogs.CollectionChanged += (_, _) => { Raise(nameof(HasFilteredLogs)); CommandManager.InvalidateRequerySuggested(); };
+        StartCommand = new AsyncCommand(() => MaintenanceAsync(StartAsync), ReportError, () => CanEdit && !HasInputErrors);
         StopCommand = new AsyncCommand(StopAsync, ReportError, () => CanStop);
-        SaveSettingsCommand = new RelayCommand(() => SaveSettings());
+        SaveSettingsCommand = new RelayCommand(() => SaveSettings(), () => !HasInputErrors);
         CheckUpdateCommand = new AsyncCommand(() => MaintenanceAsync(CheckUpdateAsync), ReportError, () => CanEdit);
         InstallCommand = new AsyncCommand(() => MaintenanceAsync(InstallAsync), ReportError, () => CanEdit);
         CopyUrlCommand = new RelayCommand(() => Guard(() => { DesktopService.Copy(PublicUrl); Notify("공개 주소를 복사했습니다."); }), () => HasUrl);
@@ -74,9 +75,9 @@ public sealed class MainViewModel : ObservableObject
         ShowQrCommand = new RelayCommand(() => Guard(() => { QrImage = DesktopService.MakeQr(PublicUrl); ShowQrRequested?.Invoke(); }), () => HasUrl);
         CopyQrCommand = new RelayCommand(() => Guard(() => { Clipboard.SetImage(QrImage!); Notify("QR 이미지를 복사했습니다."); }), () => HasUrl && QrImage is not null);
         SaveQrCommand = new RelayCommand(() => Guard(() => DesktopService.SaveQr(QrImage!)), () => HasUrl && QrImage is not null);
-        SaveLogsCommand = new AsyncCommand(SaveLogsAsync, ReportError);
-        CopyLogsCommand = new RelayCommand(() => Guard(() => { DesktopService.Copy(LogText()); Notify("필터링된 로그를 복사했습니다. 민감한 정보를 확인한 후 공유하세요."); }));
-        ClearLogsCommand = new RelayCommand(() => { _logs.Clear(); Logs.Clear(); Raise(nameof(LogCount)); });
+        SaveLogsCommand = new AsyncCommand(SaveLogsAsync, ReportError, () => HasFilteredLogs);
+        CopyLogsCommand = new RelayCommand(() => Guard(() => { DesktopService.Copy(LogText()); Notify("필터링된 로그를 복사했습니다. 민감한 정보를 확인한 후 공유하세요."); }), () => HasFilteredLogs);
+        ClearLogsCommand = new RelayCommand(() => { _logs.Clear(); Logs.Clear(); Raise(nameof(LogCount)); }, () => LogCount > 0);
         OpenLogFolderCommand = new RelayCommand(() => Guard(() => { Directory.CreateDirectory(_paths.Logs); DesktopService.Open(_paths.Logs); }));
         ToggleThemeCommand = new RelayCommand(() => Theme = Theme == "Dark" ? "Light" : "Dark");
         ShowDashboardCommand = new RelayCommand(() => IsAdvanced = false);
@@ -111,7 +112,6 @@ public sealed class MainViewModel : ObservableObject
 
     public AppSettings Settings => _settings;
     public TunnelState State => _snapshot.State;
-    public string StateName => State.ToString();
     public string StateLabel => _snapshot.EdgeReady && !_snapshot.LocalReady ? "로컬 서버 대기" : _snapshot.EdgeReady && State != TunnelState.Connected ? "공개 주소 확인 중" : State switch
     {
         TunnelState.Idle => "대기 중", TunnelState.Validating => "로컬 서버 확인", TunnelState.Starting => "실행 준비",
@@ -158,10 +158,29 @@ public sealed class MainViewModel : ObservableObject
     public string Search { get => _search; set { Set(ref _search, value); FilteredLogs.Refresh(); } }
     public string LevelFilter { get => _levelFilter; set { Set(ref _levelFilter, value); FilteredLogs.Refresh(); } }
     public int LogCount => Logs.Count;
+    public bool HasFilteredLogs => !FilteredLogs.IsEmpty;
     public BitmapSource? QrImage { get => _qr; private set => Set(ref _qr, value); }
 
-    public string PortText { get => _port; set { Set(ref _port, value); Raise(nameof(LocalPreview)); } }
-    public string RetryText { get => _retry; set => Set(ref _retry, value); }
+    public string PortText { get => _port; set { if (Set(ref _port, value)) { Raise(nameof(LocalPreview)); RefreshValidation(); } } }
+    public string RetryText { get => _retry; set { if (Set(ref _retry, value)) RefreshValidation(); } }
+    public string PortError => int.TryParse(PortText, out var port) && port is >= 1 and <= 65535 ? "" : "포트는 1부터 65535 사이의 숫자로 입력하세요.";
+    public string RetryError => int.TryParse(RetryText, out var retry) && retry is >= 0 and <= 10 ? "" : "재연결 횟수는 0부터 10 사이의 숫자로 입력하세요.";
+    public string EmailError
+    {
+        get
+        {
+            try { _settings.Validate(); return ""; }
+            catch (ArgumentException ex) { return ex.Message; }
+        }
+    }
+    public bool HasInputErrors => PortError.Length > 0 || RetryError.Length > 0 || EmailError.Length > 0;
+    public string Error => "";
+    public string this[string columnName] => columnName switch { nameof(PortText) => PortError, nameof(RetryText) => RetryError, nameof(AllowedEmails) => EmailError, _ => "" };
+    private void RefreshValidation()
+    {
+        Raise(nameof(PortError)); Raise(nameof(RetryError)); Raise(nameof(EmailError)); Raise(nameof(HasInputErrors));
+        CommandManager.InvalidateRequerySuggested();
+    }
     private void ChangeSettings(AppSettings settings, string name) { _settings = settings; Raise(name); }
     public string ServiceType { get => _settings.ServiceType; set { ChangeSettings(_settings with { ServiceType = value }, nameof(ServiceType)); Raise(nameof(LocalPreview)); Raise(nameof(IsHttps)); } }
     public bool IsHttps => ServiceType == "HTTPS";
@@ -175,7 +194,7 @@ public sealed class MainViewModel : ObservableObject
     public bool MinimizeToTray { get => _settings.MinimizeToTray; set => ChangeSettings(_settings with { MinimizeToTray = value }, nameof(MinimizeToTray)); }
     public bool CloseToTray { get => _settings.CloseToTray; set => ChangeSettings(_settings with { CloseToTray = value }, nameof(CloseToTray)); }
     public bool Notifications { get => _settings.Notifications; set => ChangeSettings(_settings with { Notifications = value }, nameof(Notifications)); }
-    public string AllowedEmails { get => _settings.AllowedEmails; set { ChangeSettings(_settings with { AllowedEmails = value }, nameof(AllowedEmails)); Raise(nameof(AccessDescription)); } }
+    public string AllowedEmails { get => _settings.AllowedEmails; set { ChangeSettings(_settings with { AllowedEmails = value }, nameof(AllowedEmails)); Raise(nameof(AccessDescription)); RefreshValidation(); } }
     public string Theme { get => _settings.Theme; set { ChangeSettings(_settings with { Theme = value }, nameof(Theme)); ThemeChanged?.Invoke(); Raise(nameof(State)); } }
 
     public async Task InitializeAsync()
@@ -253,7 +272,7 @@ public sealed class MainViewModel : ObservableObject
     });
     private void RefreshState()
     {
-        foreach (var name in new[] { nameof(State), nameof(StateName), nameof(StateLabel), nameof(StatusIcon), nameof(StatusMessage), nameof(Reachability), nameof(PublicUrl), nameof(HasUrl), nameof(UrlTitle), nameof(UrlDescription), nameof(IsActive), nameof(CanEdit), nameof(CanStop), nameof(IsConnecting), nameof(AnimateProgress), nameof(Uptime), nameof(AttemptText) }) Raise(name);
+        foreach (var name in new[] { nameof(State), nameof(StateLabel), nameof(StatusIcon), nameof(StatusMessage), nameof(Reachability), nameof(PublicUrl), nameof(HasUrl), nameof(UrlTitle), nameof(UrlDescription), nameof(IsActive), nameof(CanEdit), nameof(CanStop), nameof(IsConnecting), nameof(AnimateProgress), nameof(Uptime), nameof(AttemptText) }) Raise(name);
         CommandManager.InvalidateRequerySuggested();
     }
     private void Tick()
