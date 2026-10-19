@@ -1,0 +1,76 @@
+# WPF 리워크 검증 기록
+
+검증일: 2026-10-19 (Asia/Seoul). Windows x64, .NET SDK 10.0.401, 대상 .NET 8 / Windows Desktop Runtime 8.0.31.
+
+## 완료된 전환
+
+- 기존 `Program.cs`, `Start/*` WinForms 화면/Designer/resx, `Tools/*` 화면 및 UI 결합 헬퍼, 기존 `Properties/Resources.*`를 제거했습니다.
+- `UseWindowsForms` 및 `System.Windows.Forms` 참조 없이 WPF 진입점·XAML·MVVM·ResourceDictionary로 구성했습니다.
+- UI와 독립적인 Core 프로젝트에 설정·진단·다운로드·로깅·프로세스·상태 전이를 분리했습니다.
+- 기존 사용자 데이터 경로와 `settings.txt` 마이그레이션을 유지했습니다.
+
+## 실제 실행 결과
+
+| 항목 | 결과 | 확인 범위 |
+|---|---|---|
+| Release 솔루션 빌드 | 성공 | 앱, Core, 핵심 테스트, WPF 테스트 모두 컴파일, 컴파일 오류 0 |
+| NuGet 보안 감사 | 미완료 | 이 환경에서 api.nuget.org 접근 실패로 NU1900 경고 발생. 취약점 없음으로 간주하지 않음 |
+| 핵심 자동 검사 | 24/24 통과 | 설정, 진단, 인자, 상태, 로그, 다운로드 실패/취소, 프로세스 트리 종료 |
+| HTTP/HTTPS 진단 | 통과 | 실제 로컬 404 응답, 닫힌 포트 진단, 자체 서명 인증서 검증 및 명시적 검증 생략. 진단 실패는 터널 생성 차단과 구분 |
+| WPF 실제 창 시작 | 통과 | XAML 로딩, 바인딩 오류 검사, 명령 활성화, 로그 타이머 |
+| SVG 아이콘 | 통과 | 원본 SVG 18개 파싱·WPF 렌더링, 이미지 기반 트레이 아이콘 |
+| 테마와 창 크기 | 통과 | Dark/Light, 1180×860 및 860×640 DIP, 긴 URL 줄바꿈 |
+| 125/150/200% 렌더링 | 통과 | 120/144/192 DPI RenderTargetBitmap PNG 생성. 실제 모니터 DPI 변경 검증은 아님 |
+| 로그 성능/필터 | 통과 | 10,000개 항목 입력, 화면 2,000개 상한, 검색/레벨 필터, 실제 생성 컨테이너 100개 미만으로 가상화 확인 |
+| 로컬 QR | 통과 | 외부 QR API 없는 생성, 600px 이상 PNG 인코딩, QR 창 열기 |
+| 시스템 트레이 | 통과 | 실제 Shell_NotifyIcon 등록. 종료 메뉴 명령을 실행하고 창 닫힘 및 트레이 해제 확인 |
+| CI 셸 없는 모드 | 통과 | 접근할 수 없는 트레이 검사만 SKIP, 나머지 WPF 검사 수행 |
+| 다운로드 취소/실패 복구 | 통과 | 가짜 HTTP 스트림의 중간 취소, SHA 불일치 시 기존 파일 보존 및 임시 파일 삭제 |
+| 공식 cloudflared 설치 | 통과 | 2026.10.1 공식 메타데이터·파일 다운로드, SHA256/PE x64 검사, 실제 `--version` 실행 |
+| 접근 제한 CLI 지원 | 확인 | 설치된 2026.10.1 `tunnel --help`에서 `--allowed-mail` 확인, 미지원 CLI 차단 단위 검사 |
+| 실제 터널 프로세스/URL | 확인 | 테스트 전용 로컬 서버 진단, Quick Tunnel URL 발급, Cloudflare QUIC 연결 등록 |
+| 서버 없는 시작과 나중 서버 실행 | 실제 통과 | 공식 cloudflared 2026.10.1로 서버 없이 URL 발급, 이후 같은 포트에서 테스트 서버 시작, URL 유지 및 LocalReady 전환, 중지/URL 초기화 확인 (`--live-origin-late`) |
+| 실제 공개 페이지 응답 | 실패 / 미확인 | 발급 주소의 시스템 DNS 조회가 SocketException 11001(NameResolutionError)로 실패. Connected로 표시하지 않음. 현재 구현은 연결된 터널 주소를 유지하며 응답 확인을 계속 시도 |
+| 실제 연결 실패 후 종료 | 확인 | 테스트 finally 경로에서 StopAsync와 서버 정리, 잔류 cloudflared 프로세스 없음 |
+| Windows x64 폴더 배포 | 성공 | `dotnet publish ... --self-contained false`, `.artifacts/publish` 생성 |
+| 런타임 포함 단일 파일 | 로컬 미검증 | README 명령과 GitHub Actions에 구성. CI 원격 실행은 이 작업에서 수행하지 않음 |
+
+일반 샌드박스에서 로컬 소켓 통신과 Shell_NotifyIcon에 액세스 거부가 발생했습니다. 해당 검사는 별도로 제한 없는 로컬 테스트 프로세스에서 통과했습니다. Windows 설정이나 DNS 서버를 변경하지 않았습니다.
+
+공개 네트워크 실패를 회피하기 위해 Connected 판정을 완화하거나 실제 테스트 결과를 모의 성공으로 대체하지 않았습니다. WPF 연결 화면 렌더링 테스트는 외부 서비스와 독립된 테스트 스냅샷을 주입한 것이며 실제 공개 접속 성공의 증거가 아닙니다.
+
+## 수정한 문제
+
+- 트레이 종료 메뉴가 터널만 멈추고 앱은 남던 경로를 전체 종료로 통합했습니다.
+- 이전 프로세스의 종료 이벤트가 새 프로세스를 참조하던 경쟁 조건을 제거했습니다. 각 실행은 독립적인 작업·토큰·프로세스 수명을 가집니다.
+- 프로세스가 실행되었다는 이유만으로 연결 성공으로 판단하던 표시를 준비 상태 및 공개 응답 확인으로 변경했습니다. 로컬 서버 부재는 터널 생성을 막지 않으며, 로컬 서버 대기와 실제 연결 성공을 구분합니다. 같은 프로세스/URL을 유지하면서 서버의 나중 시작과 중지를 감지하는 자동 검사가 통과했습니다.
+- URL이 없을 때 복사/QR/브라우저 버튼이 활성화되던 동작과 자동 클립보드 덮어쓰기를 제거했습니다.
+- 동기 프로세스 종료 대기로 UI를 막던 처리를 비동기 취소/종료로 변경했습니다.
+- 기존 실행 파일을 삭제한 후 새 파일을 이동하던 다운로드를 검증 후 원자 교체로 변경했습니다.
+- QR 주소의 외부 API 전송을 제거했습니다.
+- 로그의 매 줄 UI 호출·전체 TextBox 재구성을 제한된 큐/배치/가상화로 교체했습니다.
+- 재구축 과정에서 실제 실행으로 발견한 진행률 양방향 바인딩 오류, 로그 CollectionView 갱신 오류, 스타일 상속과 설명 줄바꿈 문제를 수정하고 WPF 회귀 검사에 포함했습니다.
+
+## 아직 별도 확인이 필요한 항목
+
+- 다른 DNS/네트워크에서 실제 공개 페이지 접속과 장시간 재연결, 네트워크 변경/절전 복귀
+- 사용자 브라우저 열기, OS 클립보드 URL/QR 복사, 저장 대화상자를 통한 내보내기 전체 흐름
+- 실제 모바일 QR 스캔, 이메일 PIN 송수신과 브라우저 인증
+- 다중 모니터 이동, 물리적인 125/150/200% DPI 변경, Windows 텍스트 크기 변경, 스크린 리더
+- Explorer 재시작 후 트레이 재등록과 Windows 알림의 실제 표시
+- Windows 종료/로그오프와 앱 강제 종료 시 Job Object의 OS 수준 정리
+- 서명된 설치 프로그램, ARM64 네이티브 배포, GitHub Actions 원격 실행
+
+핵심 프로세스 취소에서 자식 트리 종료는 실제 실행으로 확인했습니다. OS 강제 종료/로그오프 전체 흐름을 같은 검증으로 간주하지 않습니다.
+
+## 재현 명령
+
+```powershell
+dotnet build CloudflaredTunnelHost.sln -c Release
+dotnet run --project Tests/CloudflaredTunnelHost.Tests.csproj -c Release
+dotnet run --project Tests/Wpf/CloudflaredTunnelHost.WpfTests.csproj -c Release
+# 외부 네트워크가 필요한 선택적 테스트
+dotnet run --project Tests/CloudflaredTunnelHost.Tests.csproj -c Release -- --live
+```
+
+렌더링 PNG와 WPF 검사 결과는 `.artifacts/`, 테스트 전용 데이터는 `.test-data/`에 생성하며 Git에서 제외합니다. 전체 라이브 URL은 로그에서 가리며, 로그 공유 시 추가 개인정보를 검토해야 합니다.

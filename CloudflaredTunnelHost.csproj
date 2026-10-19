@@ -4,43 +4,24 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Branding\app.ico</ApplicationIcon>
     <Title>Cloudflared Tunnel Host</Title>
     <Copyright>© 2024-2026 Ji Beak min(tharu8813). All rights reserved.</Copyright>
-    <PackageIcon>icon.png</PackageIcon>
     <Authors></Authors>
-    <Version>1.1.0</Version>
-    <StartupObject>CloudflaredTunnelHost.Program</StartupObject>
-	  <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <ForceDesignerDpiUnaware>false</ForceDesignerDpiUnaware>
+    <Version>2.0.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="icon.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="icon.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
+    <Compile Remove="Core\**;Tests\**" />
+    <EmbeddedResource Remove="Core\**;Tests\**" />
+    <Page Remove="Tests\**" />
+    <ProjectReference Include="Core\CloudflaredTunnelHost.Core.csproj" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
+    <Resource Include="Assets\Icons\*.svg;Assets\Branding\app.ico" />
+    <Content Include="LICENSE;Assets\QRCoder-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
