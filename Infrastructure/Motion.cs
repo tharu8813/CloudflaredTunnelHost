@@ -59,6 +59,7 @@ public static class Motion
         private Popup? _popup;
         private bool _pressed;
         private bool _transformed;
+        private bool _revealed;
         private readonly Dictionary<DependencyProperty, AnimationTimeline> _animations = new();
 
         public MotionState(FrameworkElement element)
@@ -121,21 +122,26 @@ public static class Motion
         private void Reveal()
         {
             if (!SystemParameters.ClientAreaAnimation) { Reset(); return; }
+            // Bound data refreshes should not replay an entrance on an already-visible element.
+            if (_revealed) return;
             if (GetStagger(_element) && _element is Panel panel)
             {
+                _revealed = true;
                 var index = 0;
                 foreach (var child in panel.Children.OfType<FrameworkElement>().Where(child => child.IsVisible))
-                    State(child).Enter(Math.Min(index++, 5) * 40);
+                    State(child).Enter(Math.Min(index++, MotionProfile.MaxStaggerSteps) * MotionProfile.StaggerMs);
             }
             else Enter(0);
         }
 
         private void Enter(int delay)
         {
+            if (_revealed) return;
+            _revealed = true;
             Transform();
             var opacity = (double)_element.GetAnimationBaseValue(UIElement.OpacityProperty);
-            Animate(_element, UIElement.OpacityProperty, 0, opacity, 280, delay);
-            Animate(_offset, TranslateTransform.YProperty, 16, 0, 420, delay);
+            Animate(_element, UIElement.OpacityProperty, 0, opacity, MotionProfile.RevealFadeMs, delay);
+            Animate(_offset, TranslateTransform.YProperty, MotionProfile.RevealTravel, 0, MotionProfile.RevealTravelMs, delay);
         }
 
         private void Respond()
@@ -144,9 +150,12 @@ public static class Motion
             if (!SystemParameters.ClientAreaAnimation) { Reset(); return; }
             Transform();
             var active = _element.IsEnabled;
-            var scale = !active ? 1 : _pressed ? .975 : _element.IsMouseOver ? 1.012 : 1;
-            Animate(_scale, ScaleTransform.ScaleXProperty, _scale.ScaleX, scale, _pressed ? 90 : 240, 0);
-            Animate(_scale, ScaleTransform.ScaleYProperty, _scale.ScaleY, scale, _pressed ? 90 : 240, 0);
+            // Hover tint lives in the template; hover scaling makes typography jitter.
+            var scale = active && _pressed ? MotionProfile.PressScale : 1;
+            var duration = _pressed ? MotionProfile.PressMs : MotionProfile.ReleaseMs;
+            if (Math.Abs(_scale.ScaleX - scale) < .0001 && Math.Abs(_scale.ScaleY - scale) < .0001) return;
+            Animate(_scale, ScaleTransform.ScaleXProperty, _scale.ScaleX, scale, duration, 0);
+            Animate(_scale, ScaleTransform.ScaleYProperty, _scale.ScaleY, scale, duration, 0);
         }
 
         private void Animate(IAnimatable target, DependencyProperty property, double from, double to, int milliseconds, int delay)
@@ -159,7 +168,7 @@ public static class Motion
             animation.KeyFrames.Add(new DiscreteDoubleKeyFrame(from, KeyTime.FromTimeSpan(TimeSpan.Zero)));
             if (delay > 0) animation.KeyFrames.Add(new DiscreteDoubleKeyFrame(from, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(delay))));
             animation.KeyFrames.Add(new EasingDoubleKeyFrame(to, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(milliseconds + delay)),
-                new CubicEase { EasingMode = EasingMode.EaseOut }));
+                MotionProfile.EaseOut()));
             animation.Completed += (_, _) =>
             {
                 if (_animations.GetValueOrDefault(property) != animation) return;
@@ -175,6 +184,7 @@ public static class Motion
             _pending?.Abort();
             _animations.Clear();
             _pressed = false;
+            _revealed = false;
             _element.BeginAnimation(UIElement.OpacityProperty, null);
             _scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             _scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);

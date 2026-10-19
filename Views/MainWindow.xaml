@@ -18,7 +18,7 @@
                             <Style.Triggers><DataTrigger Binding="{Binding IsActive}" Value="True"><Setter Property="Fill" Value="{DynamicResource SuccessBrush}"/></DataTrigger></Style.Triggers>
                         </Style></Ellipse.Style>
                     </Ellipse>
-                    <TextBlock x:Name="CaptionStateLabel" Text="{Binding StateLabel}" i:Motion.Watch="{Binding StateLabel}" Foreground="{DynamicResource MutedBrush}" FontSize="12" AutomationProperties.LiveSetting="Polite"/>
+                    <TextBlock x:Name="CaptionStateLabel" Text="{Binding StateLabel}" Foreground="{DynamicResource MutedBrush}" FontSize="12" AutomationProperties.LiveSetting="Polite"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <Button x:Name="MinimizeCaptionButton" Style="{StaticResource CaptionButton}" Click="MinimizeWindow_Click" ToolTip="최소화" AutomationProperties.Name="창 최소화">
@@ -49,7 +49,7 @@
         <Grid Grid.Row="1">
         <Grid.ColumnDefinitions><ColumnDefinition Width="168"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <Border Background="{DynamicResource RailBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" Padding="16,28,16,20">
-            <DockPanel LastChildFill="True" i:Motion.Reveal="True" i:Motion.Stagger="True">
+            <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Top" Margin="8,0,0,34">
                     <c:SvgIcon Kind="brand" Stroke="{DynamicResource AccentBrush}" Width="34" Height="34" HorizontalAlignment="Left" Margin="0,0,0,14"/>
                     <TextBlock Text="터널 호스트" FontSize="18" FontWeight="Bold"/>
@@ -70,7 +70,7 @@
                 </StackPanel>
             </DockPanel>
         </Border>
-        <c:TransitionPresenter x:Name="PageTransition" Grid.Column="1" Margin="{StaticResource PagePadding}" Index="{Binding PageIndex}" HorizontalTransitionIndex="1">
+        <c:TransitionPresenter x:Name="PageTransition" Grid.Column="1" Margin="{StaticResource PagePadding}" Index="{Binding PageIndex}">
         <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <DockPanel Margin="0,0,0,14">
@@ -128,7 +128,7 @@
                                     <TextBlock Text="터널을 시작하면 여기에 주소가 나타납니다." FontSize="14" Margin="0,0,0,6"/>
                                     <TextBlock Text="로컬 서버는 나중에 실행해도 됩니다. 준비된 주소를 복사하거나 QR 코드로 공유하세요." Style="{StaticResource Caption}"/>
                                 </StackPanel>
-                                <StackPanel x:Name="ShareActions" Visibility="{Binding HasUrl, Converter={StaticResource BoolVisibility}}" i:Motion.Reveal="True" i:Motion.Stagger="True">
+                                <StackPanel x:Name="ShareActions" Visibility="{Binding HasUrl, Converter={StaticResource BoolVisibility}}">
                                     <TextBox x:Name="PublicUrlInput" Text="{Binding PublicUrl, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" FontSize="16" Padding="12,10" TextWrapping="Wrap" AutomationProperties.Name="공개 터널 URL"/>
                                     <WrapPanel Margin="0,6,0,0">
                                         <Button x:Name="CopyUrlButton" Command="{Binding CopyUrlCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" ToolTip="공개 주소 복사 / Ctrl+L" AutomationProperties.Name="공개 주소 복사">
@@ -173,7 +173,7 @@
                 <TabControl x:Name="SettingsTabs" Grid.Row="1" SelectionChanged="SettingsTabs_SelectionChanged" AutomationProperties.Name="설정 카테고리">
                     <TabItem x:Name="ConnectionTab" Header="연결">
                         <ScrollViewer x:Name="ConnectionSettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0" Focusable="False">
-                        <StackPanel x:Name="ConnectionSettings" IsEnabled="{Binding CanEdit}" i:Motion.Reveal="True" i:Motion.Stagger="True">
+                        <StackPanel x:Name="ConnectionSettings" IsEnabled="{Binding CanEdit}">
                             <TextBlock Text="연결 프로토콜" Style="{StaticResource SectionTitle}"/>
                             <ComboBox ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" Width="220" HorizontalAlignment="Left" Margin="0,8,0,12" AutomationProperties.Name="연결 프로토콜"/>
                             <TextBlock Text="auto는 cloudflared가 프로토콜을 선택합니다. QUIC이 방화벽에 차단되면 http2를 시도하세요." Style="{StaticResource Caption}"/>
@@ -190,7 +190,7 @@
                     </TabItem>
                     <TabItem x:Name="AccessTab" Header="접근 제한">
                         <ScrollViewer x:Name="AccessSettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0" Focusable="False">
-                        <StackPanel x:Name="AccessSettings" IsEnabled="{Binding CanEdit}" i:Motion.Reveal="True" i:Motion.Stagger="True">
+                        <StackPanel x:Name="AccessSettings" IsEnabled="{Binding CanEdit}">
                             <TextBlock Text="접근 제한" Style="{StaticResource SectionTitle}"/>
                             <TextBlock Text="허용할 이메일 주소 (쉼표로 구분)" Style="{StaticResource Caption}" Margin="0,10,0,8"/>
                             <TextBox x:Name="AllowedEmailsInput" Text="{Binding AllowedEmails, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" AutomationProperties.Name="접근 허용 이메일" ToolTip="비워두면 공개 접근을 허용합니다. 입력하면 CLI 지원 여부를 검사하고 PIN 인증을 요구합니다."/>
@@ -202,7 +202,7 @@
                     </TabItem>
                     <TabItem x:Name="LoggingTab" Header="로그">
                         <ScrollViewer x:Name="LoggingSettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0" Focusable="False">
-                        <StackPanel i:Motion.Reveal="True" i:Motion.Stagger="True">
+                        <StackPanel>
                             <TextBlock Text="Cloudflared 로그" Style="{StaticResource SectionTitle}"/>
                             <TextBlock Text="로그 레벨" Style="{StaticResource Caption}" Margin="0,8,0,8"/>
                             <ComboBox x:Name="LogLevelInput" ItemsSource="{Binding LogLevels}" SelectedItem="{Binding LogLevel}" IsEnabled="{Binding CanEdit}" Width="220" HorizontalAlignment="Left" AutomationProperties.Name="Cloudflared 로그 레벨"/>
@@ -216,7 +216,7 @@
                     </TabItem>
                     <TabItem x:Name="AppTab" Header="앱·트레이">
                         <ScrollViewer x:Name="AppSettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0" Focusable="False">
-                        <StackPanel x:Name="RuntimeSettings" i:Motion.Reveal="True" i:Motion.Stagger="True">
+                        <StackPanel x:Name="RuntimeSettings">
                             <TextBlock Text="앱 시작과 시스템 트레이" Style="{StaticResource SectionTitle}"/>
                             <TextBlock Text="터널 실행 중에도 변경할 수 있습니다. 트레이·알림·로그 저장은 즉시, 앱 시작 옵션은 다음 실행부터 적용됩니다." Style="{StaticResource Caption}" Margin="0,6,0,10"/>
                             <CheckBox Content="앱을 실행하면 마지막 설정으로 터널 시작" x:Name="StartTunnelOnLaunchInput" IsChecked="{Binding StartTunnelOnLaunch}"/>
@@ -232,7 +232,7 @@
                     </TabItem>
                     <TabItem x:Name="UpdatesTab" Header="업데이트">
                         <ScrollViewer x:Name="UpdateSettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0" Focusable="False">
-                        <StackPanel i:Motion.Reveal="True" i:Motion.Stagger="True">
+                        <StackPanel>
                             <TextBlock Text="Cloudflared 관리" Style="{StaticResource SectionTitle}"/>
                             <TextBlock Text="{Binding Version}" FontFamily="Consolas" Margin="0,8,0,10"/>
                             <TextBlock Text="{Binding ReleaseText}" Style="{StaticResource Caption}"/>
@@ -245,11 +245,11 @@
             </Grid>
             <Grid x:Name="LogsPage" Grid.Row="1" Visibility="{Binding IsLogs, Converter={StaticResource BoolVisibility}}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                <StackPanel Margin="0,0,0,18" i:Motion.Reveal="True">
+                <StackPanel Margin="0,0,0,18">
                     <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding Logs.Count, StringFormat={}최근 {0}개}" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/><TextBlock Text="활동 로그" FontSize="28" FontWeight="SemiBold"/></DockPanel>
                     <TextBlock Text="실시간 기록을 검색하고 필요한 로그를 복사하거나 저장하세요." Style="{StaticResource Caption}" Margin="0,8,0,0"/>
                 </StackPanel>
-                <Grid Grid.Row="1" Margin="0,0,0,14" i:Motion.Reveal="True">
+                <Grid Grid.Row="1" Margin="0,0,0,14">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions>
                     <StackPanel><Label Target="{Binding ElementName=LogSearchInput}" Content="로그 검색" Foreground="{DynamicResource MutedBrush}" Padding="0,0,0,8"/><TextBox x:Name="LogSearchInput" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="로그 검색" ToolTip="로그 메시지와 레벨에서 검색"/></StackPanel>
                     <StackPanel Grid.Column="2"><TextBlock Text="레벨" Style="{StaticResource Caption}"/><ComboBox ItemsSource="{Binding FilterLevels}" SelectedItem="{Binding LevelFilter}" AutomationProperties.Name="로그 레벨 필터"/></StackPanel>

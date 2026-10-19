@@ -31,6 +31,7 @@ jobs:
           name: wpf-checks
           path: |
             .artifacts/*.png
+            .artifacts/*.gif
             .artifacts/*results.txt
       - uses: actions/upload-artifact@v4
         with:

@@ -50,13 +50,17 @@ internal static class Program
         if (SystemParameters.ClientAreaAnimation)
         {
             Assert(first.Opacity > last.Opacity && last.Opacity < .1, "staggered elements must stay hidden until their turn");
-            Assert(Offset(first).Y > 0 && Offset(first).Y < 16, "reveal should produce intermediate positions");
+            Assert(Offset(first).Y > 0 && Offset(first).Y < MotionProfile.RevealTravel, "reveal should produce intermediate positions");
             Assert(((TransformGroup)first.RenderTransform).Children[0] == rotated, "reveal must preserve an existing transform");
             Assert(first.RenderTransformOrigin == new Point(.2, .3), "reveal must preserve the caller's transform origin");
         }
         await Task.Delay(700);
         Assert(Math.Abs(first.Opacity - .7) < .001 && !first.HasAnimatedProperties, "reveal must restore bound opacity and release clocks");
         Assert(BindingOperations.IsDataBound(first, UIElement.OpacityProperty), "reveal must preserve opacity bindings");
+        Motion.SetWatch(panel, "content updated");
+        await Task.Delay(60);
+        Assert(Math.Abs(first.Opacity - .7) < .001 && !first.HasAnimatedProperties,
+            "visible property changes must not replay the reveal");
         if (SystemParameters.ClientAreaAnimation) Assert(Offset(first).Y == 0 && !Offset(first).HasAnimatedProperties, "reveal must settle without held transform clocks");
 
         for (var i = 0; i < 6; i++)
@@ -77,6 +81,7 @@ internal static class Program
         window.Content = button;
         await Task.Delay(80);
         Assert(Motion.GetInteractive(button), "shared button style must enable interaction");
+        Assert(MotionProfile.TabDurationMs < MotionProfile.PageDurationMs, "tab motion should finish before page motion");
         Assert(!Motion.GetInteractive(new Button { Style = (Style)Application.Current.FindResource("CaptionButton") }), "caption buttons retain native hit areas");
         SendMouse(button, UIElement.PreviewMouseLeftButtonDownEvent);
         await Task.Delay(130);
