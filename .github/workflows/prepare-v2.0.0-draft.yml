@@ -1,0 +1,49 @@
+name: Prepare v2.0.0 draft release (one-time)
+on:
+  push:
+    branches:
+      - release/draft-v2.0.0
+    paths:
+      - .github/workflows/prepare-v2.0.0-draft.yml
+
+permissions:
+  contents: write
+
+jobs:
+  draft-release:
+    if: github.repository == 'tharu8813/CloudflaredTunnelHost'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release draft without executable assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/release-notes.md" <<'RELEASE_NOTES'
+          ## 주요 변경 사항
+          
+          - WPF 기반 UI 전면 개편: 대시보드, 고급 설정 탭, 활동 로그를 하나의 창에 통합
+          - 화면 및 탭 전환 애니메이션, 버튼 반응, 요소 등장 모션을 정리해 일관성 개선
+          - 다크/라이트 테마, SVG 아이콘, QR 코드 공유와 트레이 메뉴
+          - 연결 상태, 자동 재연결, 알림, 로그 확인 및 설정 경험 개선
+          
+          ## 다운로드 및 실행
+          
+          - 권장 대상: Windows 10/11 64-bit
+          - 파일: CloudflaredTunnelHost.exe (단일 실행 파일, .NET 8 런타임 포함)
+          - 설치 프로그램 없이 실행할 수 있는 포터블 버전
+          - 처음 터널을 시작할 때 cloudflared가 필요하면 공식 배포본을 내려받으므로 인터넷 연결이 필요합니다.
+          - Quick Tunnel은 개발·테스트용 임시 공개 연결이며, 공개 URL 취급에 주의하세요.
+          
+          ## 배포 안내
+          
+          이 릴리즈는 **파일 업로드 대기 중인 초안**입니다. 배포 담당자가 검증된 실행 파일과 필요한 GPL-3.0 및 QRCoder 라이선스 고지를 직접 업로드한 뒤 게시합니다. 실행 파일 업로드 전에는 공개하지 않습니다.
+          RELEASE_NOTES
+          if gh release view "v2.0.0" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "v2.0.0 release already exists; not changing it."
+            exit 0
+          fi
+          gh release create "v2.0.0" --repo "$GH_REPO" --target "0e940e75cce22dd7b6787a43eb6ab5517a0249b5" --title "Cloudflared Tunnel Host v2.0.0" --notes-file "$RUNNER_TEMP/release-notes.md" --draft
+          echo "Created draft v2.0.0 release; binaries must be uploaded manually."
