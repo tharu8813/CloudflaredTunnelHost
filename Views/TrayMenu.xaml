@@ -1,0 +1,59 @@
+<ContextMenu x:Class="CloudflaredTunnelHost.Views.TrayMenu"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:CloudflaredTunnelHost.Controls"
+             Style="{StaticResource TrayMenu}" MinWidth="272" FontFamily="Segoe UI, Malgun Gothic" FontSize="13">
+    <MenuItem Focusable="False" IsHitTestVisible="False">
+        <MenuItem.Template><ControlTemplate TargetType="MenuItem"><ContentPresenter ContentSource="Header" Margin="12,10,12,12"/></ControlTemplate></MenuItem.Template>
+        <MenuItem.Header>
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <c:SvgIcon Kind="brand" Stroke="{DynamicResource AccentBrush}" Width="20" Height="20" Margin="0,0,9,0"/>
+                    <TextBlock Text="터널 호스트" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="6" Height="6" Margin="0,0,8,0">
+                        <Ellipse.Style><Style TargetType="Ellipse"><Setter Property="Fill" Value="{DynamicResource MutedBrush}"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding IsActive}" Value="True"><Setter Property="Fill" Value="{DynamicResource SuccessBrush}"/></DataTrigger></Style.Triggers>
+                        </Style></Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock x:Name="StatusLabel" Text="{Binding StateLabel}" Foreground="{DynamicResource MutedBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding Uptime}" FontFamily="Consolas" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="12,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </MenuItem.Header>
+    </MenuItem>
+    <Separator Style="{StaticResource TraySeparator}"/>
+    <MenuItem x:Name="ShowMainItem" Header="메인 화면 표시" Style="{StaticResource TrayMenuItem}" Click="ShowMain_Click">
+        <MenuItem.Icon><c:SvgIcon Kind="dashboard" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+    </MenuItem>
+    <MenuItem x:Name="StartItem" Header="터널 시작" Command="{Binding StartCommand}" Visibility="{Binding CanEdit, Converter={StaticResource BoolVisibility}}" Style="{StaticResource TrayMenuItem}">
+        <MenuItem.Icon><c:SvgIcon Kind="play" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+    </MenuItem>
+    <MenuItem x:Name="StopItem" Header="{Binding StopLabel}" Command="{Binding StopCommand}">
+        <MenuItem.Icon><c:SvgIcon Kind="stop" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+        <MenuItem.Style><Style TargetType="MenuItem" BasedOn="{StaticResource TrayMenuItem}">
+            <Style.Triggers><DataTrigger Binding="{Binding CanEdit}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
+        </Style></MenuItem.Style>
+    </MenuItem>
+    <Separator Style="{StaticResource TraySeparator}"/>
+    <MenuItem x:Name="CopyUrlItem" Header="주소 복사" Command="{Binding CopyUrlCommand}" Style="{StaticResource TrayMenuItem}">
+        <MenuItem.Icon><c:SvgIcon Kind="copy" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+    </MenuItem>
+    <MenuItem Header="브라우저 열기" Command="{Binding OpenUrlCommand}" Style="{StaticResource TrayMenuItem}">
+        <MenuItem.Icon><c:SvgIcon Kind="external" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+    </MenuItem>
+    <MenuItem Header="QR 코드" Command="{Binding ShowQrCommand}" Style="{StaticResource TrayMenuItem}">
+        <MenuItem.Icon><c:SvgIcon Kind="qr" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+    </MenuItem>
+    <Separator Style="{StaticResource TraySeparator}"/>
+    <MenuItem Header="활동 로그" Command="{Binding ShowLogsCommand}" Style="{StaticResource TrayMenuItem}">
+        <MenuItem.Icon><c:SvgIcon Kind="terminal" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+    </MenuItem>
+    <MenuItem Header="로그 폴더 열기" Command="{Binding OpenLogFolderCommand}" Style="{StaticResource TrayMenuItem}">
+        <MenuItem.Icon><c:SvgIcon Kind="server" Stroke="{DynamicResource TextBrush}"/></MenuItem.Icon>
+    </MenuItem>
+    <Separator Style="{StaticResource TraySeparator}"/>
+    <MenuItem x:Name="ExitItem" Header="프로그램 종료" Command="{Binding ExitCommand}" Style="{StaticResource TrayMenuItem}" Foreground="{DynamicResource DangerBrush}">
+        <MenuItem.Icon><c:SvgIcon Kind="exit" Stroke="{DynamicResource DangerBrush}"/></MenuItem.Icon>
+    </MenuItem>
+</ContextMenu>

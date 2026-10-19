@@ -37,7 +37,8 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
     private string _levelFilter = "전체";
     private bool _working;
     private double _progress;
-    private bool _advanced;
+    private enum Page { Dashboard, Settings, Logs }
+    private Page _page;
     private bool _logsOpen = true;
     private bool _autoScroll = true;
     private BitmapSource? _qr;
@@ -82,9 +83,9 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
         ClearLogsCommand = new RelayCommand(() => { _logs.Clear(); Logs.Clear(); Raise(nameof(LogCount)); }, () => LogCount > 0);
         OpenLogFolderCommand = new RelayCommand(() => Guard(() => { Directory.CreateDirectory(_paths.Logs); DesktopService.Open(_paths.Logs); }));
         ToggleThemeCommand = new RelayCommand(() => Theme = Theme == "Dark" ? "Light" : "Dark");
-        ShowDashboardCommand = new RelayCommand(() => IsAdvanced = false);
+        ShowDashboardCommand = new RelayCommand(() => ShowPage(Page.Dashboard));
         ShowSettingsCommand = new RelayCommand(() => IsAdvanced = true);
-        ShowLogsCommand = new RelayCommand(() => ShowLogsRequested?.Invoke());
+        ShowLogsCommand = new RelayCommand(() => { ShowPage(Page.Logs); ShowLogsRequested?.Invoke(); });
         ExitCommand = new RelayCommand(() => ExitRequested?.Invoke());
         DismissNoticeCommand = new RelayCommand(() => Notice = "");
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => Tick(), _dispatcher);
@@ -136,6 +137,10 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
     public bool CanStop => (IsActive || IsWorking) && State != TunnelState.Stopping;
     public bool IsConnecting => !_snapshot.EdgeReady && (State is TunnelState.Validating or TunnelState.Starting or TunnelState.Connecting or TunnelState.Reconnecting);
     public bool AnimateProgress => IsConnecting && SystemParameters.ClientAreaAnimation;
+    public string StopLabel => State == TunnelState.Stopping ? "중지하는 중…" : IsWorking ? "작업 취소" : IsConnecting ? "연결 취소" : "터널 중지";
+    public string ActionHint => IsAdvanced ? "터널 시작 시에도 설정이 자동 저장됩니다."
+        : CanEdit ? "첫 실행에 필요한 cloudflared는 자동으로 설치합니다."
+        : "연결할 서버를 바꾸려면 먼저 터널을 중지하세요.";
     public string Uptime
     {
         get
@@ -155,8 +160,17 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
     public string EmailSupportText => SupportsEmailAuth ? "설치된 CLI에서 --allowed-mail 지원을 확인했습니다." : "설치된 CLI의 지원 여부를 확인해야 합니다. 지원하지 않으면 실행을 차단합니다.";
     public double DownloadProgress { get => _progress; private set => Set(ref _progress, value); }
     public string WorkText { get; private set; } = "";
-    public bool IsAdvanced { get => _advanced; set { Set(ref _advanced, value); Raise(nameof(IsDashboard)); } }
-    public bool IsDashboard => !IsAdvanced;
+    public bool IsAdvanced { get => _page == Page.Settings; set => ShowPage(value ? Page.Settings : Page.Dashboard); }
+    public bool IsDashboard => _page == Page.Dashboard;
+    public bool IsLogs => _page == Page.Logs;
+    public int PageIndex => (int)_page;
+    private void ShowPage(Page page)
+    {
+        if (_page == page) return;
+        _page = page;
+        Raise(nameof(PageIndex));
+        Raise(nameof(IsAdvanced)); Raise(nameof(IsDashboard)); Raise(nameof(IsLogs)); Raise(nameof(ActionHint));
+    }
     public bool LogsOpen { get => _logsOpen; set => Set(ref _logsOpen, value); }
     public bool AutoScroll { get => _autoScroll; set => Set(ref _autoScroll, value); }
     public string Search { get => _search; set { Set(ref _search, value); FilteredLogs.Refresh(); } }
@@ -178,11 +192,12 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
         }
     }
     public bool HasInputErrors => PortError.Length > 0 || RetryError.Length > 0 || EmailError.Length > 0;
+    public string InputError => PortError.Length > 0 ? PortError : EmailError.Length > 0 ? EmailError : RetryError;
     public string Error => "";
     public string this[string columnName] => columnName switch { nameof(PortText) => PortError, nameof(RetryText) => RetryError, nameof(AllowedEmails) => EmailError, _ => "" };
     private void RefreshValidation()
     {
-        Raise(nameof(PortError)); Raise(nameof(RetryError)); Raise(nameof(EmailError)); Raise(nameof(HasInputErrors));
+        Raise(nameof(PortError)); Raise(nameof(RetryError)); Raise(nameof(EmailError)); Raise(nameof(HasInputErrors)); Raise(nameof(InputError));
         CommandManager.InvalidateRequerySuggested();
     }
     private void ChangeSettings(AppSettings settings, string name) { _settings = settings; Raise(name); }
@@ -203,10 +218,11 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
 
     public async Task InitializeAsync()
     {
+        var startOnLaunch = StartTunnelOnLaunch;
         try { await RefreshVersionAsync(_lifetime.Token); }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
         catch (Exception ex) { _logs.Write(ex.Message, "WARN"); Version = "실행 파일 확인 실패 / 다시 설치 가능"; }
-        if (!_lifetime.IsCancellationRequested && StartTunnelOnLaunch) StartCommand.Execute(null);
+        if (!_lifetime.IsCancellationRequested && startOnLaunch) StartCommand.Execute(null);
     }
     private async Task RefreshVersionAsync(CancellationToken token)
     {
@@ -246,7 +262,7 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
         var settings = ReadSettings();
         _storage.Save(settings); _settings = settings;
         if (!File.Exists(_paths.Executable)) await InstallAsync(token);
-        token.ThrowIfCancellationRequested(); _logs.SaveToFile = settings.SaveLogFile;
+        token.ThrowIfCancellationRequested();
         _tunnel.Start(settings);
     }
     private async Task StopAsync()
@@ -272,11 +288,11 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
         var old = _snapshot; _snapshot = snapshot;
         if (old.PublicUrl != snapshot.PublicUrl || !HasUrl) QrImage = null;
         RefreshState();
-        if (old.State != snapshot.State || old.EdgeReady != snapshot.EdgeReady || old.LocalReady != snapshot.LocalReady) StatusChanged?.Invoke(snapshot);
+        if (old.State != snapshot.State || old.EdgeReady != snapshot.EdgeReady || old.LocalReady != snapshot.LocalReady || old.PublicUrl != snapshot.PublicUrl) StatusChanged?.Invoke(snapshot);
     });
     private void RefreshState()
     {
-        foreach (var name in new[] { nameof(State), nameof(StateLabel), nameof(StatusIcon), nameof(StatusMessage), nameof(Reachability), nameof(PublicUrl), nameof(HasUrl), nameof(UrlTitle), nameof(UrlDescription), nameof(IsActive), nameof(CanEdit), nameof(CanStop), nameof(IsConnecting), nameof(AnimateProgress), nameof(Uptime), nameof(AttemptText) }) Raise(name);
+        foreach (var name in new[] { nameof(State), nameof(StateLabel), nameof(StatusIcon), nameof(StatusMessage), nameof(Reachability), nameof(PublicUrl), nameof(HasUrl), nameof(UrlTitle), nameof(UrlDescription), nameof(IsActive), nameof(CanEdit), nameof(CanStop), nameof(IsConnecting), nameof(AnimateProgress), nameof(StopLabel), nameof(ActionHint), nameof(Uptime), nameof(AttemptText) }) Raise(name);
         CommandManager.InvalidateRequerySuggested();
     }
     private void Tick()

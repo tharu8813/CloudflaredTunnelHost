@@ -3,9 +3,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
-using CloudflaredTunnelHost.Controls;
 using CloudflaredTunnelHost.Core.Models;
+using CloudflaredTunnelHost.Core.Services;
 using CloudflaredTunnelHost.ViewModels;
+using CloudflaredTunnelHost.Views;
 
 namespace CloudflaredTunnelHost.Services;
 
@@ -19,8 +20,8 @@ public sealed class TrayService : IDisposable
     private readonly nint _icon;
     private readonly uint _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
     private bool _disposed;
-    private readonly MenuItem _status;
     private NotifyIconData _data;
+    private TunnelSnapshot _previous = new(TunnelState.Idle, "");
 
     public TrayService(Window window, MainViewModel model, Action show)
     {
@@ -38,19 +39,7 @@ public sealed class TrayService : IDisposable
         if (_icon == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
         _data = new NotifyIconData { Size = (uint)Marshal.SizeOf<NotifyIconData>(), Window = handle, Id = 1, Flags = 1 | 2 | 4, CallbackMessage = Callback, Icon = _icon, Tip = "Cloudflared Tunnel Host", Info = "", InfoTitle = "" };
         _source.AddHook(Hook);
-        _status = new MenuItem { Header = model.StateLabel, IsEnabled = false };
-        _menu = new ContextMenu { DataContext = model };
-        _menu.Items.Add(_status);
-        Add("메인 화면 표시", "dashboard", () => _show());
-        _menu.Items.Add(new Separator());
-        AddCommand("터널 시작", "play", model.StartCommand);
-        AddCommand("터널 중지 / 작업 취소", "stop", model.StopCommand);
-        AddCommand("URL 복사", "copy", model.CopyUrlCommand);
-        AddCommand("브라우저 열기", "external", model.OpenUrlCommand);
-        AddCommand("QR 코드 표시", "qr", model.ShowQrCommand);
-        AddCommand("로그 폴더 열기", "terminal", model.OpenLogFolderCommand);
-        _menu.Items.Add(new Separator());
-        AddCommand("프로그램 완전 종료", "exit", model.ExitCommand);
+        _menu = new TrayMenu(model, _show);
         _model.StatusChanged += Update;
         try { AddIcon(); }
         catch { Dispose(); throw; }
@@ -61,28 +50,37 @@ public sealed class TrayService : IDisposable
         if (!ShellNotifyIcon(0, ref _data)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "시스템 트레이 아이콘을 등록할 수 없습니다.");
         _data.TimeoutOrVersion = 4; ShellNotifyIcon(4, ref _data);
     }
-    private void Add(string label, string icon, Action action)
-    {
-        var item = new MenuItem { Header = label, Icon = MakeIcon(icon) };
-        item.Click += (_, _) => action(); _menu.Items.Add(item);
-    }
-    private void AddCommand(string label, string icon, System.Windows.Input.ICommand command) => _menu.Items.Add(new MenuItem { Header = label, Icon = MakeIcon(icon), Command = command });
-    private static SvgIcon MakeIcon(string kind)
-    {
-        var icon = new SvgIcon { Kind = kind, Width = 16, Height = 16 }; icon.SetResourceReference(SvgIcon.StrokeProperty, "TextBrush"); return icon;
-    }
     private void Update(TunnelSnapshot snapshot)
     {
         if (_disposed) return;
+        var notification = Notification(_previous, snapshot);
+        _previous = snapshot;
         _data.Tip = $"Cloudflared Tunnel Host / {_model.StateLabel}";
         _data.Flags = 4; ShellNotifyIcon(1, ref _data);
-        _status.Header = $"{_model.StateLabel} / {_model.Uptime}";
-        if (_model.Notifications && snapshot.State is TunnelState.Error or TunnelState.Idle)
+        if (_model.Notifications && notification is { } info)
         {
-            _data.Flags = 16; _data.InfoTitle = "Cloudflared Tunnel Host";
-            _data.Info = snapshot.Message.Length > 255 ? snapshot.Message[..255] : snapshot.Message;
-            _data.InfoFlags = 4; _data.BalloonIcon = _icon; ShellNotifyIcon(1, ref _data);
+            _data.Flags = 16; _data.InfoTitle = info.Title;
+            _data.Info = info.Message.Length > 255 ? info.Message[..255] : info.Message;
+            _data.InfoFlags = 4 | 0x80; _data.BalloonIcon = _icon; ShellNotifyIcon(1, ref _data);
         }
+    }
+    private static (string Title, string Message)? Notification(TunnelSnapshot previous, TunnelSnapshot current)
+    {
+        var wasWaiting = previous.EdgeReady && !previous.LocalReady && previous.PublicUrl is not null;
+        var waiting = current.EdgeReady && !current.LocalReady && current.PublicUrl is not null;
+        if (current.State == TunnelState.Error && previous.State != TunnelState.Error)
+            return ("터널 연결 오류", LoggingService.Redact(current.Message));
+        if (current.State == TunnelState.Idle && previous.State != TunnelState.Idle)
+            return ("터널 종료됨", "터널 연결 작업이 종료되었습니다. 이전 공개 주소는 사용할 수 없습니다.");
+        if (current.State == TunnelState.Validating && previous.State != TunnelState.Validating)
+            return ("터널 시작 중", "로컬 서버를 확인하고 터널 연결을 준비합니다.");
+        if (current.State == TunnelState.Connected && previous.State != TunnelState.Connected)
+            return (previous.State == TunnelState.Reconnecting ? "터널 연결 복구됨" : "터널 연결 완료", "터널과 로컬 서버가 연결되었습니다. 앱에서 공개 주소를 복사하거나 공유하세요.");
+        if (waiting && !wasWaiting && current.IsActive && current.State != TunnelState.Stopping)
+            return ("로컬 서버 대기", "터널은 열려 있지만 로컬 서버에 연결할 수 없습니다. 서버를 실행하면 같은 공개 주소로 연결됩니다.");
+        if (current.State == TunnelState.Reconnecting && !waiting && (previous.State != TunnelState.Reconnecting || wasWaiting))
+            return ("터널 재연결 중", "연결 상태가 바뀌어 다시 연결을 확인하고 있습니다. 복구 결과를 다시 알려드립니다.");
+        return null;
     }
     private nint Hook(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
     {
@@ -92,11 +90,10 @@ public sealed class TrayService : IDisposable
         }
         if (message != Callback || _disposed) return 0;
         int action = (int)((long)lParam & 0xffff);
-        if (action is 0x203 or 0x400 or 0x401) { _show(); handled = true; }
+        if (action is 0x203 or 0x400 or 0x401 or 0x405) { _show(); handled = true; }
         if (action is 0x205 or 0x7b)
         {
             SetForegroundWindow(hwnd);
-            _status.Header = $"{_model.StateLabel} / {_model.Uptime}";
             _menu.Placement = PlacementMode.MousePoint; _menu.IsOpen = true; handled = true;
         }
         return 0;
