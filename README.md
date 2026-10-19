@@ -1,4 +1,4 @@
-<img width="100" height="100" alt="Cloudflared Tunnel Host 로고" src="icon.png" />
+<img width="100" height="100" alt="Cloudflared Tunnel Host 프로그램 아이콘" src="icon.png" />
 
 # Cloudflared Tunnel Host
 
