@@ -38,7 +38,7 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
     private bool _working;
     private double _progress;
     private bool _advanced;
-    private bool _logsOpen;
+    private bool _logsOpen = true;
     private bool _autoScroll = true;
     private BitmapSource? _qr;
     private DateTimeOffset _noticeUntil;
@@ -46,6 +46,7 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
     public event Action? ExitRequested;
     public event Action<TunnelSnapshot>? StatusChanged;
     public event Action? ShowQrRequested;
+    public event Action? ShowLogsRequested;
     public LogCollection Logs { get; } = new();
     public ICollectionView FilteredLogs { get; }
     public string[] ServiceTypes { get; } = ["HTTP", "HTTPS"];
@@ -61,7 +62,8 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
         _logs = new(paths) { SaveToFile = _settings.SaveLogFile };
         _download = new(paths); _tunnel = new(paths, _logs); _snapshot = _tunnel.Snapshot;
         _tunnel.Changed += TunnelChanged;
-        FilteredLogs = CollectionViewSource.GetDefaultView(Logs);
+        // Popup filters must not change the default view used by the main log preview.
+        FilteredLogs = new ListCollectionView(Logs);
         FilteredLogs.Filter = value => value is LogEntry entry && (LevelFilter == "전체" || entry.Level == LevelFilter)
             && (entry.Message.Contains(Search, StringComparison.CurrentCultureIgnoreCase) || entry.Level.Contains(Search, StringComparison.OrdinalIgnoreCase));
         FilteredLogs.CollectionChanged += (_, _) => { Raise(nameof(HasFilteredLogs)); CommandManager.InvalidateRequerySuggested(); };
@@ -82,6 +84,7 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
         ToggleThemeCommand = new RelayCommand(() => Theme = Theme == "Dark" ? "Light" : "Dark");
         ShowDashboardCommand = new RelayCommand(() => IsAdvanced = false);
         ShowSettingsCommand = new RelayCommand(() => IsAdvanced = true);
+        ShowLogsCommand = new RelayCommand(() => ShowLogsRequested?.Invoke());
         ExitCommand = new RelayCommand(() => ExitRequested?.Invoke());
         DismissNoticeCommand = new RelayCommand(() => Notice = "");
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => Tick(), _dispatcher);
@@ -107,6 +110,7 @@ public sealed class MainViewModel : ObservableObject, IDataErrorInfo
     public ICommand ToggleThemeCommand { get; }
     public ICommand ShowDashboardCommand { get; }
     public ICommand ShowSettingsCommand { get; }
+    public ICommand ShowLogsCommand { get; }
     public ICommand ExitCommand { get; }
     public ICommand DismissNoticeCommand { get; }
 

@@ -12,6 +12,7 @@ public partial class MainWindow : Window
     private readonly MainViewModel _model;
     private TrayService? _tray;
     private QrWindow? _qr;
+    private LogWindow? _logsWindow;
     private bool _quitting;
     private bool _allowClose;
     public MainWindow(MainViewModel model)
@@ -34,7 +35,21 @@ public partial class MainWindow : Window
         model.ThemeChanged += ApplyCaptionTheme;
         model.ShowQrRequested += () =>
         {
+            if (_quitting || _allowClose) return;
             Restore(); _qr?.Close(); _qr = new QrWindow(model) { Owner = this }; _qr.Closed += (_, _) => _qr = null; _qr.Show();
+        };
+        model.ShowLogsRequested += () =>
+        {
+            if (_quitting || _allowClose) return;
+            Restore();
+            if (_logsWindow is null)
+            {
+                _logsWindow = new LogWindow(model) { Owner = this };
+                _logsWindow.Closed += (_, _) => _logsWindow = null;
+                _logsWindow.Show();
+            }
+            if (_logsWindow.WindowState == WindowState.Minimized) _logsWindow.WindowState = WindowState.Normal;
+            _logsWindow.Activate();
         };
         model.PropertyChanged += (_, e) =>
         {
@@ -43,15 +58,16 @@ public partial class MainWindow : Window
         };
         Application.Current.SessionEnding += HandleSessionEnding;
     }
-    private void HideToTray() { Hide(); ShowInTaskbar = false; }
-    private void Restore() { ShowInTaskbar = true; Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }
-    private async void OnClosing(object? sender, CancelEventArgs e)
+    private void HideToTray() { if (_quitting || _allowClose) return; Hide(); ShowInTaskbar = false; }
+    private void Restore() { if (_quitting || _allowClose) return; ShowInTaskbar = true; Show(); if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal; Activate(); }
+    private void OnClosing(object? sender, CancelEventArgs e)
     {
         if (_allowClose) return;
         e.Cancel = true;
         if (_quitting) return;
-        if (_model.CloseToTray && _tray is not null) { HideToTray(); return; }
-        await QuitAsync();
+        // WPF must finish the cancelled Closing event before we hide or close this window again.
+        if (_model.CloseToTray && _tray is not null) Dispatcher.BeginInvoke(new Action(HideToTray));
+        else Dispatcher.BeginInvoke(new Action(RequestExit));
     }
     private async void RequestExit() => await QuitAsync();
     private async Task QuitAsync()
@@ -62,7 +78,7 @@ public partial class MainWindow : Window
         {
             _model.SaveSettings();
             await _model.ShutdownAsync();
-            _qr?.Close(); _tray?.Dispose(); _allowClose = true;
+            _qr?.Close(); _logsWindow?.Close(); _tray?.Dispose(); _allowClose = true;
             _model.ThemeChanged -= ApplyCaptionTheme;
             Application.Current.SessionEnding -= HandleSessionEnding;
             Close(); Application.Current.Shutdown();

@@ -27,15 +27,17 @@ internal static class Program
         MainViewModel? model = null;
         MainWindow? window = null;
         bool quittingViaModel = false;
+        bool windowClosed = false;
+        bool closeWindow = args.Contains("--close-window");
         bool requireTray = !args.Contains("--allow-no-tray");
         app.Exit += (_, e) =>
         {
             if (quittingViaModel && window is not null)
             {
                 var tray = typeof(MainWindow).GetField("_tray", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window);
-                if (window.IsVisible || (tray is not null && !(bool)tray.GetType().GetField("_disposed", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(tray)!)) failures.Add("Full exit did not close window and dispose tray.");
+                if (!windowClosed || window.IsVisible || app.Windows.OfType<LogWindow>().Any() || (tray is not null && !(bool)tray.GetType().GetField("_disposed", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(tray)!)) failures.Add("Full exit did not close main/log windows and dispose tray.");
             }
-            File.WriteAllText(Path.Combine(artifacts, "wpf-test-results.txt"), failures.Count == 0 ? "PASS" : string.Join("\n", failures));
+            File.WriteAllText(Path.Combine(artifacts, closeWindow ? "wpf-close-results.txt" : "wpf-test-results.txt"), failures.Count == 0 ? "PASS" : string.Join("\n", failures));
             if (failures.Count > 0) e.ApplicationExitCode = 1;
         };
         app.DispatcherUnhandledException += (_, e) => { failures.Add(e.Exception.ToString()); e.Handled = true; app.Shutdown(1); };
@@ -44,6 +46,7 @@ internal static class Program
             try
             {
                 model = new(new AppPaths(root)); window = new(model); window.Show();
+                window.Closed += (_, _) => windowClosed = true;
                 await Task.Delay(700);
                 Assert(model.Logs.Count > 0, "startup log timer is alive");
                 var trayAvailable = typeof(MainWindow).GetField("_tray", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window) is not null;
@@ -51,6 +54,24 @@ internal static class Program
                 Assert(trayAvailable || !requireTray, "native tray was created");
                 if (!trayAvailable) Console.WriteLine("SKIP native tray integration: no accessible Windows shell (CI mode)");
                 Assert(model.StartCommand.CanExecute(null) && !model.CopyUrlCommand.CanExecute(null), "Idle command enablement");
+                if (closeWindow)
+                {
+                    model.ShowLogsCommand.Execute(null);
+                    Assert(app.Windows.OfType<LogWindow>().Count() == 1, "log popup is open before title-bar exit");
+                    quittingViaModel = true;
+                    window.Close(); window.Close();
+                    Assert(!windowClosed, "Closing defers cleanup until the closing event has returned");
+                    Console.WriteLine("PASS queued title-bar close with an idle tunnel, repeated close requests, and an open log window");
+                    return;
+                }
+                if (trayAvailable)
+                {
+                    model.CloseToTray = true; window.Close(); await Task.Delay(100);
+                    Assert(!window.IsVisible && !windowClosed, "title-bar close hides to tray without quitting");
+                    typeof(MainWindow).GetMethod("Restore", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
+                    Assert(window.IsVisible, "tray restore remains usable after closing is cancelled");
+                    model.CloseToTray = false;
+                }
                 var portInput = (TextBox)window.FindName("PortInput");
                 foreach (var port in new[] { "", "0", "65536", "abc", "-1" })
                 {
@@ -80,6 +101,8 @@ internal static class Program
                 await Task.Delay(250); window.UpdateLayout();
                 var contentScroll = (ScrollViewer)window.FindName("ContentScroll");
                 AssertVisibleWithin(portInput, contentScroll, "local port is visible without scrolling at minimum size");
+                Assert(model.LogsOpen, "main activity log is visible by default");
+                AssertVisibleWithin((FrameworkElement)window.FindName("LogPanel"), (FrameworkElement)window.Content, "main log panel is visible without scrolling at minimum size");
                 Assert(Math.Abs(portInput.ActualHeight - ((ComboBox)window.FindName("ServiceTypeInput")).ActualHeight) < 2, "service and port inputs share the same height");
                 typeof(MainViewModel).GetProperty(nameof(model.IsWorking))!.SetValue(model, true);
                 typeof(MainViewModel).GetMethod("SetWork", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(model, ["다운로드 진행률 표시 검증"]);
@@ -124,7 +147,7 @@ internal static class Program
                     model.LogsOpen = true; contentScroll.ScrollToEnd(); await Task.Delay(100);
                     model.ShowSettingsCommand.Execute(null); await Task.Delay(100);
                     Assert(contentScroll.VerticalOffset == 0, "settings navigation resets scroll");
-                    model.LogsOpen = false;
+                    model.LogsOpen = true;
                 }
                 model.IsAdvanced = false;
                 model.PortText = "70000"; await Task.Delay(250);
@@ -162,10 +185,29 @@ internal static class Program
                 Assert(!app.Windows.OfType<QrWindow>().Any(), "Escape closes the QR window");
                 for (int i = 0; i < 10000; i++) model.Logs.AppendBatch([new(DateTimeOffset.Now, "INFO", "stress log " + i)]);
                 Assert(model.Logs.Count == 2000, "UI log collection bounded at 2000");
+                model.ShowLogsCommand.Execute(null); await Task.Delay(100);
+                var logWindow = app.Windows.OfType<LogWindow>().Single();
+                var popupList = (ListBox)logWindow.FindName("ActivityLog");
+                Assert(ReferenceEquals(logWindow.DataContext, model) && popupList.Items.Count == 2000, "popup shares the live log model");
+                logWindow.WindowState = WindowState.Minimized;
+                model.ShowLogsCommand.Execute(null);
+                Assert(app.Windows.OfType<LogWindow>().Count() == 1 && logWindow.WindowState == WindowState.Normal, "reopening restores the existing popup");
+                model.Logs.AppendBatch([new(DateTimeOffset.Now, "INFO", "live popup update")]);
+                Assert(((LogEntry)popupList.Items[popupList.Items.Count - 1]).Message == "live popup update", "new logs reach the popup immediately");
+                foreach (var theme in new[] { "Light", "Dark" })
+                {
+                    app.Resources.MergedDictionaries[0] = Dictionary(theme); model.Theme = theme;
+                    foreach (var size in new[] { (940, 680), (620, 440) })
+                    {
+                        logWindow.Width = size.Item1; logWindow.Height = size.Item2; await Task.Delay(150);
+                        Render(logWindow, Path.Combine(artifacts, $"log-window-{theme}-{size.Item1}.png"), 96);
+                    }
+                }
                 model.Search = "9999"; Assert(model.FilteredLogs.Cast<LogEntry>().Count() == 1 && model.CopyLogsCommand.CanExecute(null) && model.SaveLogsCommand.CanExecute(null), "log search and export enablement");
                 model.Search = ""; model.LevelFilter = "ERROR"; Assert(model.FilteredLogs.IsEmpty && !model.HasFilteredLogs && !model.CopyLogsCommand.CanExecute(null) && !model.SaveLogsCommand.CanExecute(null), "empty filter disables exports");
+                Assert(popupList.Items.Count == 0 && ((ListBox)window.FindName("ActivityLog")).Items.Count == 2000, "popup filters do not hide the main recent log preview");
                 model.LogsOpen = true; contentScroll.ScrollToEnd(); await Task.Delay(250);
-                Render(window, Path.Combine(artifacts, "logs-empty-Light.png"), 96);
+                Render(logWindow, Path.Combine(artifacts, "logs-empty-Dark.png"), 96);
                 model.LevelFilter = "전체"; model.LogsOpen = true;
                 app.Resources.MergedDictionaries[0] = Dictionary("Dark"); model.Theme = "Dark";
                 ((ScrollViewer)window.FindName("ContentScroll")).ScrollToEnd();
@@ -173,7 +215,13 @@ internal static class Program
                 var list = (ListBox)window.FindName("ActivityLog");
                 var realized = Enumerable.Range(0, model.Logs.Count).Count(index => list.ItemContainerGenerator.ContainerFromIndex(index) is not null);
                 Assert(realized < 100, "log list virtualization");
+                var popupRealized = Enumerable.Range(0, model.Logs.Count).Count(index => popupList.ItemContainerGenerator.ContainerFromIndex(index) is not null);
+                Assert(popupRealized < 100, "popup log list virtualization");
                 Render(window, Path.Combine(artifacts, "logs-Dark.png"), 96);
+                logWindow.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(logWindow), 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+                Assert(!app.Windows.OfType<LogWindow>().Any() && window.IsVisible, "Escape closes only the log popup");
+                model.ShowLogsCommand.Execute(null);
+                Assert(app.Windows.OfType<LogWindow>().Count() == 1, "log popup can reopen after close");
                 model.ClearLogsCommand.Execute(null);
                 Assert(!model.HasFilteredLogs && !model.ClearLogsCommand.CanExecute(null), "clearing logs updates the empty state and command");
                 Assert(listener.Errors.Count == 0, "no WPF binding errors: " + string.Join("\n", listener.Errors));
@@ -205,7 +253,7 @@ internal static class Program
     {
         element.UpdateLayout(); viewport.UpdateLayout();
         var bounds = element.TransformToAncestor(viewport).TransformBounds(new Rect(element.RenderSize));
-        Assert(element.IsVisible && bounds.Top >= 0 && bounds.Bottom <= viewport.ActualHeight && bounds.Left >= 0 && bounds.Right <= viewport.ActualWidth, message);
+        Assert(element.IsVisible && bounds.Top >= 0 && bounds.Bottom <= viewport.ActualHeight && bounds.Left >= 0 && bounds.Right <= viewport.ActualWidth, $"{message} ({bounds} in {viewport.RenderSize})");
     }
     private static void Render(Window window, string path, double dpi)
     {
